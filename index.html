@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>D3 Crown Fiber — Announcement Admin Panel</title>
+    <!-- Font Awesome 6 (Free) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js">
+    </script>
+    <style>
+        /* ─── RESET & BASE ─── */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0b0f15;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            min-height: 100vh;
+            padding: 24px 16px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .admin-container {
+            max-width: 820px;
+            width: 100%;
+            background: rgba(21, 27, 36, 0.96);
+            backdrop-filter: blur(10px);
+            border-radius: 32px;
+            border: 1px solid rgba(245, 166, 35, 0.3);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            padding: 0;
+        }
+
+        /* ─── HEADER ─── */
+        .admin-header {
+            background: linear-gradient(135deg, #f5a623, #d4891a);
+            padding: 22px 24px 18px;
+            text-align: center;
+        }
+        .admin-header h1 {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #000;
+            letter-spacing: 2px;
+        }
+        .admin-header h1 i {
+            margin-right: 10px;
+        }
+        .admin-header .sub {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #2c1a00;
+            background: rgba(0, 0, 0, 0.1);
+            display: inline-block;
+            padding: 4px 18px;
+            border-radius: 40px;
+            margin-top: 4px;
+        }
+        .admin-header .status-badge {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 4px 16px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            background: #1e3d2f;
+            color: #2ecc71;
+        }
+        .admin-header .status-badge.offline {
+            background: #3d1e1e;
+            color: #e74c3c;
+        }
+
+        /* ─── BODY ─── */
+        .admin-body {
+            padding: 24px 22px 20px;
+        }
+
+        /* ─── STATS ROW ─── */
+        .stats-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+        .stats-row .stat-card {
+            flex: 1;
+            min-width: 100px;
+            background: #151b24;
+            border-radius: 16px;
+            padding: 14px 16px;
+            border: 1px solid #2d3748;
+            text-align: center;
+        }
+        .stats-row .stat-card .stat-number {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #ffd966;
+        }
+        .stats-row .stat-card .stat-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: #a0a8b4;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+        .stats-row .stat-card .stat-number.urgent {
+            color: #e74c3c;
+        }
+        .stats-row .stat-card .stat-number.inactive {
+            color: #7e8c8f;
+        }
+
+        /* ─── FORM ─── */
+        .form-section {
+            background: #151b24;
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid #2d3748;
+            margin-bottom: 24px;
+        }
+        .form-section .form-title {
+            font-size: 0.9rem;
+            font-weight: 800;
+            color: #f5a623;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: 0.5px;
+        }
+        .form-section .form-title i {
+            font-size: 1rem;
+        }
+        .form-group {
+            margin-bottom: 14px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #a0a8b4;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .form-group .required {
+            color: #e74c3c;
+        }
+        .form-group select,
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            background: #1c2330;
+            border: 1px solid #2d3748;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            color: #fff;
+            outline: none;
+            transition: 0.2s;
+            font-family: inherit;
+        }
+        .form-group select:focus,
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: #f5a623;
+            box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.2);
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 70px;
+        }
+        .form-group .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 0;
+        }
+        .form-group .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #f5a623;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .form-group .checkbox-group label {
+            text-transform: none;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #cbd5e1;
+            cursor: pointer;
+            margin-bottom: 0;
+        }
+        .form-group .checkbox-group label .urgent-label {
+            color: #e74c3c;
+            font-weight: 800;
+        }
+        .form-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .form-row .form-group {
+            flex: 1;
+            min-width: 140px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 6px;
+        }
+        .form-actions button {
+            padding: 10px 24px;
+            border-radius: 40px;
+            border: none;
+            font-weight: 800;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .form-actions .btn-submit {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: #fff;
+            flex: 1;
+            justify-content: center;
+        }
+        .form-actions .btn-submit:hover {
+            transform: scale(0.97);
+            background: linear-gradient(135deg, #3ddc84, #2ecc71);
+        }
+        .form-actions .btn-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        .form-actions .btn-cancel {
+            background: transparent;
+            border: 1px solid #888;
+            color: #888;
+        }
+        .form-actions .btn-cancel:hover {
+            border-color: #fff;
+            color: #fff;
+        }
+        .form-actions .btn-delete {
+            background: #3d1e1e;
+            border: 1px solid #e74c3c;
+            color: #e74c3c;
+        }
+        .form-actions .btn-delete:hover {
+            background: #e74c3c;
+            color: #fff;
+        }
+
+        .form-feedback {
+            margin-top: 12px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: none;
+        }
+        .form-feedback.success {
+            display: block;
+            background: #1e3d2f;
+            color: #2ecc71;
+            border: 1px solid #2ecc7130;
+        }
+        .form-feedback.error {
+            display: block;
+            background: #3d1e1e;
+            color: #e74c3c;
+            border: 1px solid #e74c3c30;
+        }
+        .form-feedback.info {
+            display: block;
+            background: #1e2a3a;
+            color: #5dade2;
+            border: 1px solid #5dade230;
+        }
+
+        /* ─── LIST ─── */
+        .list-section {
+            background: #151b24;
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid #2d3748;
+        }
+        .list-section .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px 12px;
+            margin-bottom: 16px;
+        }
+        .list-section .list-header .list-title {
+            font-size: 0.9rem;
+            font-weight: 800;
+            color: #f5a623;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .list-section .list-header .list-title i {
+            font-size: 1rem;
+        }
+        .list-section .list-header .list-count {
+            font-size: 0.7rem;
+            color: #a0a8b4;
+            background: #1c2330;
+            padding: 4px 14px;
+            border-radius: 40px;
+            font-weight: 600;
+        }
+        .list-section .list-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-bottom: 14px;
+        }
+        .list-section .list-filters .filter-btn {
+            padding: 4px 14px;
+            border-radius: 30px;
+            border: 1px solid #2d3748;
+            background: transparent;
+            color: #a0a8b4;
+            font-size: 0.6rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            letter-spacing: 0.3px;
+        }
+        .list-section .list-filters .filter-btn:hover {
+            border-color: #f5a623;
+            color: #f5a623;
+        }
+        .list-section .list-filters .filter-btn.active {
+            background: #f5a623;
+            color: #000;
+            border-color: #f5a623;
+        }
+        .list-section .list-filters .filter-btn .badge-count {
+            background: #1c2330;
+            padding: 0 6px;
+            border-radius: 20px;
+            font-size: 0.5rem;
+            margin-left: 3px;
+        }
+        .list-section .list-filters .filter-btn.active .badge-count {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .list-items {
+            max-height: 520px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .list-items::-webkit-scrollbar {
+            width: 4px;
+        }
+        .list-items::-webkit-scrollbar-track {
+            background: #0f141c;
+            border-radius: 10px;
+        }
+        .list-items::-webkit-scrollbar-thumb {
+            background: #f5a623;
+            border-radius: 10px;
+        }
+
+        .list-item {
+            background: #0f141c;
+            border-radius: 14px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            border-left: 5px solid #2d3748;
+            transition: 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 8px 12px;
+        }
+        .list-item:hover {
+            border-left-color: #f5a623;
+            background: #131a24;
+        }
+        .list-item .item-info {
+            flex: 1;
+            min-width: 180px;
+        }
+        .list-item .item-info .item-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #ffd966;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .list-item .item-info .item-title .urgent-tag {
+            font-size: 0.5rem;
+            font-weight: 800;
+            color: #e74c3c;
+            background: #3d1e1e;
+            padding: 0 10px;
+            border-radius: 30px;
+            animation: urgentPulse 1.2s ease-in-out infinite;
+        }
+        @keyframes urgentPulse {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        .list-item .item-info .item-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px 12px;
+            margin-top: 3px;
+        }
+        .list-item .item-info .item-meta .meta-cat {
+            font-size: 0.55rem;
+            font-weight: 700;
+            padding: 1px 10px;
+            border-radius: 30px;
+            background: #1e293b;
+            color: #a0b3d9;
+        }
+        .list-item .item-info .item-meta .meta-cat.maintenance {
+            background: #2a3a2a;
+            color: #2ecc71;
+        }
+        .list-item .item-info .item-meta .meta-cat.new_packages {
+            background: #1e2a4a;
+            color: #5dade2;
+        }
+        .list-item .item-info .item-meta .meta-cat.offers_discounts {
+            background: #3d2e1e;
+            color: #f5a623;
+        }
+        .list-item .item-info .item-meta .meta-cat.outage_alert {
+            background: #3d1e1e;
+            color: #e74c3c;
+        }
+        .list-item .item-info .item-meta .meta-cat.general_news {
+            background: #1e293b;
+            color: #a0b3d9;
+        }
+        .list-item .item-info .item-meta .meta-time {
+            font-size: 0.5rem;
+            color: #7e8c8f;
+        }
+        .list-item .item-info .item-desc {
+            font-size: 0.7rem;
+            color: #cbd5e1;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+        .list-item .item-status {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        .list-item .item-status .status-badge-item {
+            font-size: 0.55rem;
+            font-weight: 700;
+            padding: 2px 12px;
+            border-radius: 30px;
+            background: #1e3d2f;
+            color: #2ecc71;
+        }
+        .list-item .item-status .status-badge-item.inactive {
+            background: #2a2a2a;
+            color: #888;
+        }
+        .list-item .item-actions {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        .list-item .item-actions button {
+            background: none;
+            border: 1px solid #2d3748;
+            border-radius: 30px;
+            padding: 4px 12px;
+            font-size: 0.55rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #a0a8b4;
+        }
+        .list-item .item-actions .edit-btn:hover {
+            border-color: #f5a623;
+            color: #f5a623;
+            background: #1c2330;
+        }
+        .list-item .item-actions .delete-btn:hover {
+            border-color: #e74c3c;
+            color: #e74c3c;
+            background: #1c2330;
+        }
+        .list-item .item-actions .toggle-btn:hover {
+            border-color: #2ecc71;
+            color: #2ecc71;
+            background: #1c2330;
+        }
+
+        .list-empty {
+            text-align: center;
+            padding: 32px 0;
+            color: #7e8c8f;
+            font-size: 0.8rem;
+        }
+        .list-empty i {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 8px;
+            color: #2d3748;
+        }
+
+        /* ─── TICKER PREVIEW ─── */
+        .ticker-preview {
+            background: #0a0e14;
+            border-radius: 14px;
+            padding: 10px 16px;
+            margin-bottom: 20px;
+            border: 1px solid #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            overflow: hidden;
+        }
+        .ticker-preview .preview-label {
+            font-size: 0.6rem;
+            font-weight: 700;
+            color: #f5a623;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+        }
+        .ticker-preview .preview-track {
+            display: flex;
+            white-space: nowrap;
+            animation: tickerScroll 20s linear infinite;
+            gap: 30px;
+            flex: 1;
+            overflow: hidden;
+        }
+        .ticker-preview .preview-track .preview-item {
+            font-size: 0.7rem;
+            color: #e0e8f0;
+            font-weight: 500;
+        }
+        .ticker-preview .preview-track .preview-item .preview-cat {
+            font-size: 0.5rem;
+            font-weight: 700;
+            padding: 0 8px;
+            border-radius: 30px;
+            margin-right: 4px;
+            background: #1e293b;
+            color: #a0b3d9;
+        }
+        .ticker-preview .preview-track .preview-item .preview-cat.urgent {
+            background: #3d1e1e;
+            color: #e74c3c;
+        }
+        .ticker-preview .preview-empty {
+            color: #7e8c8f;
+            font-size: 0.7rem;
+        }
+        @keyframes tickerScroll {
+            0% {
+                transform: translateX(100%);
+            }
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+
+        /* ─── FOOTER ─── */
+        .admin-footer {
+            text-align: center;
+            padding: 16px 20px;
+            font-size: 0.6rem;
+            color: #7e8c8f;
+            border-top: 1px solid #1e293b;
+            background: #0f141c;
+        }
+        .admin-footer .footer-brand {
+            font-weight: 800;
+            color: #f5a623;
+            font-size: 0.75rem;
+        }
+        .admin-footer .footer-brand span {
+            color: #ffd966;
+        }
+        .admin-footer .footer-dev {
+            margin-top: 2px;
+            color: #5a6a7a;
+        }
+        .admin-footer .footer-dev .dev-name {
+            color: #f5a623;
+            font-weight: 700;
+        }
+        .admin-footer .back-link {
+            display: inline-block;
+            margin-top: 6px;
+            color: #f5a623;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.7rem;
+        }
+        .admin-footer .back-link:hover {
+            text-decoration: underline;
+        }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 600px) {
+            .admin-body {
+                padding: 16px 14px;
+            }
+            .admin-header h1 {
+                font-size: 1.4rem;
+            }
+            .form-row {
+                flex-direction: column;
+            }
+            .form-row .form-group {
+                min-width: auto;
+            }
+            .list-item {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .list-item .item-status {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                width: 100%;
+            }
+            .list-item .item-actions {
+                width: 100%;
+                justify-content: flex-start;
+                margin-top: 4px;
+            }
+            .stats-row .stat-card {
+                min-width: 70px;
+                padding: 10px 12px;
+            }
+            .stats-row .stat-card .stat-number {
+                font-size: 1.2rem;
+            }
+            .form-actions button {
+                flex: 1;
+                justify-content: center;
+                padding: 8px 16px;
+                font-size: 0.75rem;
+            }
+            .ticker-preview {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .ticker-preview .preview-track {
+                animation-duration: 15s;
+            }
+        }
+        @media (max-width: 400px) {
+            .admin-header h1 {
+                font-size: 1.1rem;
+            }
+            .stats-row .stat-card .stat-number {
+                font-size: 1rem;
+            }
+            .stats-row .stat-card .stat-label {
+                font-size: 0.5rem;
+            }
+            .list-item .item-info .item-title {
+                font-size: 0.8rem;
+            }
+            .list-item .item-info .item-desc {
+                font-size: 0.65rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="admin-container">
+
+        <!-- ─── HEADER ─── -->
+        <div class="admin-header">
+            <h1><i class="fas fa-bullhorn"></i> Announcement Manager</h1>
+            <div class="sub">D3 Crown Fiber — Admin Panel</div>
+            <div id="connectionStatus" class="status-badge"><i class="fas fa-circle"></i> Connected</div>
+        </div>
+
+        <!-- ─── BODY ─── -->
+        <div class="admin-body">
+
+            <!-- ─── TICKER PREVIEW ─── -->
+            <div class="ticker-preview">
+                <span class="preview-label"><i class="fas fa-bolt"></i> Ticker</span>
+                <div class="preview-track" id="tickerPreviewTrack">
+                    <span class="preview-empty">No active announcements</span>
+                </div>
+            </div>
+
+            <!-- ─── STATS ─── -->
+            <div class="stats-row" id="statsRow">
+                <div class="stat-card">
+                    <div class="stat-number" id="statTotal">0</div>
+                    <div class="stat-label">Total</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="statActive">0</div>
+                    <div class="stat-label">Active</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number urgent" id="statUrgent">0</div>
+                    <div class="stat-label">Urgent</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number inactive" id="statInactive">0</div>
+                    <div class="stat-label">Inactive</div>
+                </div>
+            </div>
+
+            <!-- ─── FORM ─── -->
+            <div class="form-section" id="formSection">
+                <div class="form-title">
+                    <i class="fas fa-pen-fancy"></i>
+                    <span id="formTitle">Add New Announcement</span>
+                </div>
+
+                <div class="form-group">
+                    <label>Category <span class="required">*</span></label>
+                    <select id="annCategory">
+                        <option value="maintenance">🔧 Maintenance</option>
+                        <option value="new_packages">📦 New Packages</option>
+                        <option value="offers_discounts">🏷️ Offers / Discounts</option>
+                        <option value="outage_alert">⚠️ Outage Alert</option>
+                        <option value="general_news">📰 General News</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Title <span class="required">*</span> <span style="font-weight:400;color:#7e8c8f;font-size:0.55rem;text-transform:none;">(max 80 chars)</span></label>
+                    <input type="text" id="annTitle" placeholder="e.g. Scheduled Maintenance on Sunday" maxlength="80" />
+                </div>
+
+                <div class="form-group">
+                    <label>Message <span class="required">*</span> <span style="font-weight:400;color:#7e8c8f;font-size:0.55rem;text-transform:none;">(max 500 chars)</span></label>
+                    <textarea id="annMessage" placeholder="Full announcement details…" maxlength="500"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="annUrgent" />
+                            <label for="annUrgent"><span class="urgent-label">🚨</span> Mark as Urgent <span style="font-weight:400;color:#7e8c8f;font-size:0.65rem;">(push notification)</span></label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="annActive" checked />
+                            <label for="annActive">✅ Active <span style="font-weight:400;color:#7e8c8f;font-size:0.65rem;">(visible to clients)</span></label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn-submit" id="submitBtn"><i class="fas fa-plus"></i> Add Announcement</button>
+                    <button class="btn-cancel" id="cancelBtn"><i class="fas fa-times"></i> Cancel</button>
+                    <button class="btn-delete" id="deleteBtn" style="display:none;"><i class="fas fa-trash"></i> Delete</button>
+                </div>
+
+                <div class="form-feedback" id="formFeedback"></div>
+            </div>
+
+            <!-- ─── LIST ─── -->
+            <div class="list-section">
+                <div class="list-header">
+                    <div class="list-title"><i class="fas fa-list"></i> All Announcements</div>
+                    <span class="list-count" id="listCount">0 items</span>
+                </div>
+
+                <div class="list-filters" id="filterContainer">
+                    <button class="filter-btn active" data-filter="all">📢 All <span class="badge-count" id="filterAllCount">0</span></button>
+                    <button class="filter-btn" data-filter="maintenance">🔧 Maintenance <span class="badge-count" id="filterMaintenanceCount">0</span></button>
+                    <button class="filter-btn" data-filter="new_packages">📦 New Pkgs <span class="badge-count" id="filterNewPackagesCount">0</span></button>
+                    <button class="filter-btn" data-filter="offers_discounts">🏷️ Offers <span class="badge-count" id="filterOffersCount">0</span></button>
+                    <button class="filter-btn" data-filter="outage_alert">⚠️ Outage <span class="badge-count" id="filterOutageCount">0</span></button>
+                    <button class="filter-btn" data-filter="general_news">📰 News <span class="badge-count" id="filterGeneralCount">0</span></button>
+                </div>
+
+                <div class="list-items" id="listContainer">
+                    <div class="list-empty">
+                        <i class="fas fa-inbox"></i>
+                        No announcements yet. Create your first one above!
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ─── FOOTER ─── -->
+        <div class="admin-footer">
+            <div class="footer-brand">👑 <span>D3 Crown Fiber</span> — Announcement Admin</div>
+            <div class="footer-dev">🚀 Developed by <span class="dev-name">Khalid Ali Pechuho</span></div>
+            <a href="#" class="back-link" onclick="window.location.href='Shahid_Portal.html';">← Back to Client Portal</a>
+        </div>
+
+    </div>
+
+    <script>
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // FIREBASE CONFIG
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const firebaseConfig = {
+            apiKey: "AIzaSyDZHUNdkun0f3cY3JqfzrI86mpxy7zY7x0",
+            authDomain: "d3crown-805ce.firebaseapp.com",
+            databaseURL: "https://d3crown-805ce-default-rtdb.firebaseio.com",
+            projectId: "d3crown-805ce",
+            storageBucket: "d3crown-805ce.firebasestorage.app",
+            messagingSenderId: "1082016126067",
+            appId: "1:1082016126067:web:7d0006e48208555999c606"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const ADMIN_UID = "0rulvawKt1d6M3FlxfEariNOukk1";
+        const ANNOUNCEMENTS_PATH = "d3_announcements";
+        const COMPLAINTS_PATH = "d3_complaints";
+        const CLIENTS_PATH = "d3_clients";
+
+        let announcementsCache = [];
+        let editingId = null;
+        let currentFilter = 'all';
+        let isSubmitting = false;
+
+        // ─── DOM refs ───
+        const formTitle = document.getElementById('formTitle');
+        const annCategory = document.getElementById('annCategory');
+        const annTitle = document.getElementById('annTitle');
+        const annMessage = document.getElementById('annMessage');
+        const annUrgent = document.getElementById('annUrgent');
+        const annActive = document.getElementById('annActive');
+        const submitBtn = document.getElementById('submitBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const deleteBtn = document.getElementById('deleteBtn');
+        const formFeedback = document.getElementById('formFeedback');
+        const listContainer = document.getElementById('listContainer');
+        const tickerPreviewTrack = document.getElementById('tickerPreviewTrack');
+        const connectionStatus = document.getElementById('connectionStatus');
+
+        const statTotal = document.getElementById('statTotal');
+        const statActive = document.getElementById('statActive');
+        const statUrgent = document.getElementById('statUrgent');
+        const statInactive = document.getElementById('statInactive');
+        const listCount = document.getElementById('listCount');
+
+        // ─── ────────────────────────────────────────────
+        // ★ HELPERS
+        // ─── ────────────────────────────────────────────
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        function formatDMY(isoStr) {
+            if (!isoStr) return 'N/A';
+            const d = new Date(isoStr);
+            if (isNaN(d.getTime())) return isoStr;
+            return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+        }
+
+        function getCategoryLabel(cat) {
+            const map = {
+                'maintenance': '🔧 Maintenance',
+                'new_packages': '📦 New Packages',
+                'offers_discounts': '🏷️ Offers / Discounts',
+                'outage_alert': '⚠️ Outage Alert',
+                'general_news': '📰 General News'
+            };
+            return map[cat] || '📰 General News';
+        }
+
+        function getCategoryClass(cat) {
+            return cat || 'general_news';
+        }
+
+        function getCategoryEmoji(cat) {
+            const map = {
+                'maintenance': '🔧',
+                'new_packages': '📦',
+                'offers_discounts': '🏷️',
+                'outage_alert': '⚠️',
+                'general_news': '📰'
+            };
+            return map[cat] || '📰';
+        }
+
+        // ─── ────────────────────────────────────────────
+        // ★ FIREBASE REF
+        // ─── ────────────────────────────────────────────
+
+        function getAnnouncementsRef() {
+            return db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements`);
+        }
+
+        // ─── ────────────────────────────────────────────
+        // ★ LISTEN & RENDER
+        // ─── ────────────────────────────────────────────
+
+        function listenAnnouncements() {
+            const ref = getAnnouncementsRef();
+            ref.on('value', (snap) => {
+                const data = snap.val();
+                if (!data) {
+                    announcementsCache = [];
+                    renderAll();
+                    return;
+                }
+                const arr = Object.values(data);
+                // sort newest first
+                arr.sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
+                announcementsCache = arr;
+                renderAll();
+                updateConnectionStatus(true);
+            }, (err) => {
+                console.error('Firebase listen error:', err);
+                updateConnectionStatus(false);
+            });
+        }
+
+        function renderAll() {
+            renderStats();
+            renderTickerPreview();
+            renderList();
+            updateFilterCounts();
+        }
+
+        function renderStats() {
+            const total = announcementsCache.length;
+            const active = announcementsCache.filter(a => a.isActive !== false).length;
+            const urgent = announcementsCache.filter(a => a.isActive !== false && a.isUrgent === true).length;
+            const inactive = announcementsCache.filter(a => a.isActive === false).length;
+            statTotal.textContent = total;
+            statActive.textContent = active;
+            statUrgent.textContent = urgent;
+            statInactive.textContent = inactive;
+            listCount.textContent = total + ' items';
+        }
+
+        function renderTickerPreview() {
+            const active = announcementsCache.filter(a => a.isActive !== false);
+            if (active.length === 0) {
+                tickerPreviewTrack.innerHTML = `<span class="preview-empty">📢 No active announcements — ticker is idle</span>`;
+                return;
+            }
+            let html = '';
+            active.forEach(a => {
+                const catClass = a.isUrgent ? 'urgent' : getCategoryClass(a.category);
+                const label = getCategoryLabel(a.category);
+                html += `<span class="preview-item">
+                            <span class="preview-cat ${catClass}">${label}</span>
+                            ${escapeHtml(a.title)} ${a.isUrgent ? '🚨' : ''}
+                        </span>`;
+            });
+            // Duplicate for seamless loop
+            tickerPreviewTrack.innerHTML = html + html;
+        }
+
+        function renderList() {
+            let filtered = announcementsCache;
+            if (currentFilter !== 'all') {
+                filtered = filtered.filter(a => a.category === currentFilter);
+            }
+
+            if (filtered.length === 0) {
+                listContainer.innerHTML = `
+                        <div class="list-empty">
+                            <i class="fas fa-inbox"></i>
+                            ${currentFilter === 'all' ? 'No announcements yet. Create your first one above!' : 'No announcements in this category.'}
+                        </div>
+                    `;
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(a => {
+                const catClass = getCategoryClass(a.category);
+                const catLabel = getCategoryLabel(a.category);
+                const isActive = a.isActive !== false;
+                const isUrgent = a.isUrgent === true;
+                const timeStr = a.timestamp ? formatDMY(a.timestamp) : '';
+                const statusText = isActive ? '✅ Active' : '⛔ Inactive';
+                const statusClass = isActive ? '' : 'inactive';
+                const urgentTag = isUrgent ? `<span class="urgent-tag">🚨 URGENT</span>` : '';
+
+                html += `
+                        <div class="list-item" style="border-left-color: ${isUrgent ? '#e74c3c' : (isActive ? '#2ecc71' : '#7e8c8f')};">
+                            <div class="item-info">
+                                <div class="item-title">
+                                    ${escapeHtml(a.title)} ${urgentTag}
+                                </div>
+                                <div class="item-meta">
+                                    <span class="meta-cat ${catClass}">${catLabel}</span>
+                                    <span class="meta-time"><i class="far fa-clock"></i> ${timeStr}</span>
+                                </div>
+                                <div class="item-desc">${escapeHtml(a.message)}</div>
+                            </div>
+                            <div class="item-status">
+                                <span class="status-badge-item ${statusClass}">${statusText}</span>
+                                <div class="item-actions">
+                                    <button class="edit-btn" onclick="editAnnouncement('${a.id}')"><i class="fas fa-edit"></i> Edit</button>
+                                    <button class="toggle-btn" onclick="toggleAnnouncement('${a.id}')">
+                                        <i class="fas ${isActive ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                                    </button>
+                                    <button class="delete-btn" onclick="deleteAnnouncement('${a.id}')"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+            });
+            listContainer.innerHTML = html;
+        }
+
+        function updateFilterCounts() {
+            const all = announcementsCache.length;
+            const maintenance = announcementsCache.filter(a => a.category === 'maintenance').length;
+            const newPackages = announcementsCache.filter(a => a.category === 'new_packages').length;
+            const offers = announcementsCache.filter(a => a.category === 'offers_discounts').length;
+            const outage = announcementsCache.filter(a => a.category === 'outage_alert').length;
+            const general = announcementsCache.filter(a => a.category === 'general_news').length;
+
+            document.getElementById('filterAllCount').textContent = all;
+            document.getElementById('filterMaintenanceCount').textContent = maintenance;
+            document.getElementById('filterNewPackagesCount').textContent = newPackages;
+            document.getElementById('filterOffersCount').textContent = offers;
+            document.getElementById('filterOutageCount').textContent = outage;
+            document.getElementById('filterGeneralCount').textContent = general;
+        }
+
+        // ─── ────────────────────────────────────────────
+        // ★ FILTER
+        // ─── ────────────────────────────────────────────
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentFilter = this.dataset.filter;
+                renderList();
+            });
+        });
+
+        // ─── ────────────────────────────────────────────
+        // ★ CRUD OPERATIONS
+        // ─── ────────────────────────────────────────────
+
+        function resetForm() {
+            editingId = null;
+            annCategory.value = 'general_news';
+            annTitle.value = '';
+            annMessage.value = '';
+            annUrgent.checked = false;
+            annActive.checked = true;
+            formTitle.textContent = 'Add New Announcement';
+            submitBtn.innerHTML = '<i class="fas fa-plus"></i> Add Announcement';
+            deleteBtn.style.display = 'none';
+            formFeedback.className = 'form-feedback';
+            formFeedback.style.display = 'none';
+            isSubmitting = false;
+            submitBtn.disabled = false;
+        }
+
+        function editAnnouncement(id) {
+            const a = announcementsCache.find(item => item.id === id);
+            if (!a) return;
+            editingId = id;
+            annCategory.value = a.category || 'general_news';
+            annTitle.value = a.title || '';
+            annMessage.value = a.message || '';
+            annUrgent.checked = !!a.isUrgent;
+            annActive.checked = a.isActive !== false;
+            formTitle.textContent = '✏️ Edit Announcement';
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Update';
+            deleteBtn.style.display = 'inline-flex';
+            formFeedback.className = 'form-feedback';
+            formFeedback.style.display = 'none';
+            // Scroll to form
+            document.getElementById('formSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            annTitle.focus();
+        }
+
+        async function deleteAnnouncement(id) {
+            if (!confirm('🗑️ Delete this announcement permanently?')) return;
+            try {
+                await getAnnouncementsRef().child(id).remove();
+                showFeedback('🗑️ Announcement deleted successfully.', 'success');
+                if (editingId === id) resetForm();
+            } catch (e) {
+                console.error('deleteAnnouncement error:', e);
+                showFeedback('❌ Error: ' + e.message, 'error');
+            }
+        }
+
+        async function toggleAnnouncement(id) {
+            const a = announcementsCache.find(item => item.id === id);
+            if (!a) return;
+            const newStatus = a.isActive !== false ? false : true;
+            try {
+                await getAnnouncementsRef().child(id).update({
+                    isActive: newStatus,
+                    updatedAt: new Date().toISOString()
+                });
+                showFeedback(`✅ Announcement ${newStatus ? 'activated' : 'deactivated'}.`, 'success');
+            } catch (e) {
+                console.error('toggleAnnouncement error:', e);
+                showFeedback('❌ Error: ' + e.message, 'error');
+            }
+        }
+
+        async function saveAnnouncement() {
+            if (isSubmitting) return;
+
+            const title = annTitle.value.trim();
+            const message = annMessage.value.trim();
+            const category = annCategory.value;
+            const isUrgent = annUrgent.checked;
+            const isActive = annActive.checked;
+
+            if (!title || !message) {
+                showFeedback('⚠️ Please fill in both Title and Message.', 'error');
+                return;
+            }
+            if (title.length > 80) {
+                showFeedback('⚠️ Title must be 80 characters or less.', 'error');
+                return;
+            }
+            if (message.length > 500) {
+                showFeedback('⚠️ Message must be 500 characters or less.', 'error');
+                return;
+            }
+
+            isSubmitting = true;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+
+            const ref = getAnnouncementsRef();
+            try {
+                if (editingId) {
+                    // Update
+                    await ref.child(editingId).update({
+                        title,
+                        message,
+                        category,
+                        isUrgent,
+                        isActive,
+                        updatedAt: new Date().toISOString()
+                    });
+                    showFeedback('✅ Announcement updated successfully!', 'success');
+                    resetForm();
+                } else {
+                    // Add
+                    const newRef = ref.push();
+                    await newRef.set({
+                        id: newRef.key,
+                        title,
+                        message,
+                        category,
+                        isUrgent,
+                        isActive: isActive !== false,
+                        timestamp: new Date().toISOString(),
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    });
+                    showFeedback('✅ Announcement added successfully!', 'success');
+                    resetForm();
+                }
+            } catch (e) {
+                console.error('saveAnnouncement error:', e);
+                showFeedback('❌ Error: ' + e.message, 'error');
+            } finally {
+                isSubmitting = false;
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = editingId ? '<i class="fas fa-save"></i> Update' :
+                    '<i class="fas fa-plus"></i> Add Announcement';
+            }
+        }
+
+        // ─── ────────────────────────────────────────────
+        // ★ UI HELPERS
+        // ─── ────────────────────────────────────────────
+
+        function showFeedback(msg, type) {
+            formFeedback.textContent = msg;
+            formFeedback.className = 'form-feedback ' + type;
+            formFeedback.style.display = 'block';
+            // Auto-hide after 4 seconds for success/info
+            if (type === 'success' || type === 'info') {
+                setTimeout(() => {
+                    if (formFeedback.classList.contains(type)) {
+                        formFeedback.style.display = 'none';
+                    }
+                }, 4000);
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            if (connected) {
+                connectionStatus.innerHTML = '<i class="fas fa-circle" style="color:#2ecc71;"></i> Connected';
+                connectionStatus.className = 'status-badge';
+            } else {
+                connectionStatus.innerHTML = '<i class="fas fa-circle" style="color:#e74c3c;"></i> Offline — reconnecting…';
+                connectionStatus.className = 'status-badge offline';
+            }
+        }
+
+        // ─── ────────────────────────────────────────────
+        // ★ EVENT BINDINGS
+        // ─── ────────────────────────────────────────────
+
+        submitBtn.addEventListener('click', saveAnnouncement);
+        cancelBtn.addEventListener('click', resetForm);
+        deleteBtn.addEventListener('click', () => {
+            if (editingId) deleteAnnouncement(editingId);
+        });
+
+        // Enter key on title field
+        annTitle.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                annMessage.focus();
+            }
+        });
+
+        // ─── ────────────────────────────────────────────
+        // ★ INIT
+        // ─── ────────────────────────────────────────────
+
+        // Start listening
+        listenAnnouncements();
+
+        // Set initial filter
+        currentFilter = 'all';
+        document.querySelector('.filter-btn[data-filter="all"]')?.classList.add('active');
+
+        console.log('📢 D3 Crown Fiber — Announcement Admin Panel');
+        console.log('🚀 Developed by Khalid Ali Pechuho');
+        console.log('✨ Manage announcements, categories, and push notifications.');
+    </script>
+
+</body>
+</html>
