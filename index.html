@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>D3 Crown Fiber — Announcement Admin Panel</title>
-    <!-- Font Awesome 6 (Free) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js">
-    </script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js">
-    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>D3 Crown Admin — Announcement Manager</title>
+    <meta name="theme-color" content="#00B4D8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         /* ─── RESET & BASE ─── */
         * {
@@ -18,826 +18,1900 @@
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
-            background: #0b0f15;
-            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f0f4f9;
+            font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif;
             min-height: 100vh;
-            padding: 24px 16px;
+            padding: 20px;
+            margin: 0;
+            line-height: 1.6;
+            color: #1a2332;
+            transition: opacity 0.3s;
+        }
+
+        /* ─── SPLASH SCREEN ─── */
+        #splashScreen {
+            position: fixed;
+            inset: 0;
+            background: #ffffff;
+            z-index: 999999;
             display: flex;
+            flex-direction: column;
+            align-items: center;
             justify-content: center;
-            align-items: flex-start;
+            transition: opacity 0.8s ease, transform 0.8s ease;
+            opacity: 1;
+            pointer-events: all;
         }
-
-        .admin-container {
-            max-width: 820px;
-            width: 100%;
-            background: rgba(21, 27, 36, 0.96);
-            backdrop-filter: blur(10px);
-            border-radius: 32px;
-            border: 1px solid rgba(245, 166, 35, 0.3);
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
-            overflow: hidden;
-            padding: 0;
+        #splashScreen.hidden {
+            opacity: 0;
+            transform: scale(1.02);
+            pointer-events: none;
         }
-
-        /* ─── HEADER ─── */
-        .admin-header {
-            background: linear-gradient(135deg, #f5a623, #d4891a);
-            padding: 22px 24px 18px;
-            text-align: center;
+        #splashScreen .splash-crown {
+            width: 100px;
+            height: 90px;
+            animation: splashFloat 2.5s ease-in-out infinite;
         }
-        .admin-header h1 {
-            font-size: 1.8rem;
+        @keyframes splashFloat {
+            0%,
+            100% {
+                transform: translateY(0) scale(1);
+            }
+            50% {
+                transform: translateY(-8px) scale(1.03);
+            }
+        }
+        #splashScreen .splash-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2rem;
             font-weight: 900;
-            color: #000;
-            letter-spacing: 2px;
+            background: linear-gradient(135deg, #0077B6, #00B4D8, #0077B6);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmerText 3s ease-in-out infinite;
+            margin-top: 8px;
+            letter-spacing: 1px;
         }
-        .admin-header h1 i {
-            margin-right: 10px;
+        @keyframes shimmerText {
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
         }
-        .admin-header .sub {
-            font-size: 0.8rem;
+        #splashScreen .splash-sub {
+            font-size: 0.75rem;
+            color: #7a9aae;
+            letter-spacing: 3px;
             font-weight: 600;
-            color: #2c1a00;
-            background: rgba(0, 0, 0, 0.1);
-            display: inline-block;
-            padding: 4px 18px;
-            border-radius: 40px;
             margin-top: 4px;
         }
-        .admin-header .status-badge {
-            display: inline-block;
-            margin-top: 8px;
+        #splashScreen .splash-loader {
+            margin-top: 30px;
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(0, 180, 216, 0.06);
+            border-top-color: #00B4D8;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        #splashScreen .splash-glow {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(0, 180, 216, 0.04), transparent 70%);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            animation: glowPulse 3s ease-in-out infinite;
+        }
+        @keyframes glowPulse {
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.5;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.3);
+                opacity: 1;
+            }
+        }
+
+        /* ─── LOGIN SCREEN ─── */
+        #loginScreen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 80vh;
+            padding: 20px;
+        }
+        .login-card {
+            max-width: 420px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 40px;
+            border: 1px solid rgba(0, 180, 216, 0.12);
+            box-shadow: 0 30px 80px rgba(0, 40, 60, 0.08), 0 0 0 1px rgba(0, 180, 216, 0.04) inset;
+            padding: 36px 28px;
+            text-align: center;
+            animation: fadeSlide 0.6s ease;
+        }
+        @keyframes fadeSlide {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .login-card .logo-icon {
+            font-size: 3.2rem;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .login-card h1 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #0077B6, #00B4D8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .login-card .sub {
+            font-size: 0.75rem;
+            color: #7a9aae;
+            font-weight: 600;
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+        .login-card .input-group {
+            margin-bottom: 14px;
+            text-align: left;
+        }
+        .login-card .input-group label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #2a3a4a;
+            margin-bottom: 4px;
+            letter-spacing: 0.3px;
+        }
+        .login-card .input-group input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(0, 180, 216, 0.08);
+            border-radius: 60px;
+            padding: 14px 20px;
+            font-size: 0.95rem;
+            color: #1a2332;
+            outline: none;
+            font-weight: 500;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s;
+            backdrop-filter: blur(4px);
+        }
+        .login-card .input-group input:focus {
+            border-color: #00B4D8;
+            box-shadow: 0 0 0 4px rgba(0, 180, 216, 0.06);
+            background: rgba(255, 255, 255, 0.85);
+        }
+        .login-card .login-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 60px;
+            background: linear-gradient(135deg, #00B4D8, #0077B6);
+            color: #fff;
+            font-weight: 800;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Inter', sans-serif;
+            box-shadow: 0 4px 20px rgba(0, 180, 216, 0.15);
+            margin-top: 6px;
+        }
+        .login-card .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 180, 216, 0.2);
+        }
+        .login-card .login-btn:active {
+            transform: scale(0.97);
+        }
+        .login-card .login-error {
+            color: #e74c3c;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 12px;
+            min-height: 24px;
+        }
+        .login-card .login-loader {
+            display: none;
+            margin-top: 12px;
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(0, 180, 216, 0.06);
+            border-top-color: #00B4D8;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* ─── ADMIN PANEL ─── */
+        #adminPanel {
+            display: none;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* ─── TOP BAR ─── */
+        .admin-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 30px;
+            padding: 14px 24px;
+            border: 1px solid rgba(0, 180, 216, 0.06);
+            box-shadow: 0 4px 30px rgba(0, 40, 60, 0.03);
+            margin-bottom: 24px;
+        }
+        .admin-topbar .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 900;
+            font-size: 1.2rem;
+            color: #0077B6;
+        }
+        .admin-topbar .brand i {
+            color: #00B4D8;
+            font-size: 1.4rem;
+        }
+        .admin-topbar .brand span {
+            color: #00B4D8;
+        }
+        .admin-topbar .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .admin-topbar .topbar-right .admin-badge {
+            background: rgba(0, 180, 216, 0.06);
             padding: 4px 16px;
+            border-radius: 40px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #0077B6;
+            border: 1px solid rgba(0, 180, 216, 0.04);
+        }
+        .admin-topbar .topbar-right .logout-admin-btn {
+            background: none;
+            border: 1px solid rgba(0, 180, 216, 0.06);
+            color: #7a9aae;
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            font-family: 'Inter', sans-serif;
+        }
+        .admin-topbar .topbar-right .logout-admin-btn:hover {
+            border-color: #e74c3c;
+            color: #e74c3c;
+            background: rgba(231, 76, 60, 0.02);
+        }
+        .admin-topbar .topbar-right .btn-refresh {
+            background: rgba(0, 180, 216, 0.04);
+            border: none;
+            color: #0077B6;
+            padding: 6px 14px;
             border-radius: 40px;
             font-size: 0.7rem;
             font-weight: 700;
-            background: #1e3d2f;
-            color: #2ecc71;
+            cursor: pointer;
+            transition: 0.3s;
+            font-family: 'Inter', sans-serif;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
-        .admin-header .status-badge.offline {
-            background: #3d1e1e;
-            color: #e74c3c;
-        }
-
-        /* ─── BODY ─── */
-        .admin-body {
-            padding: 24px 22px 20px;
+        .admin-topbar .topbar-right .btn-refresh:hover {
+            background: rgba(0, 180, 216, 0.08);
         }
 
         /* ─── STATS ROW ─── */
-        .stats-row {
-            display: flex;
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             gap: 12px;
-            flex-wrap: wrap;
             margin-bottom: 24px;
         }
-        .stats-row .stat-card {
-            flex: 1;
-            min-width: 100px;
-            background: #151b24;
-            border-radius: 16px;
-            padding: 14px 16px;
-            border: 1px solid #2d3748;
+        .stat-card {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 24px;
+            padding: 16px 18px;
+            border: 1px solid rgba(0, 180, 216, 0.04);
+            box-shadow: 0 2px 20px rgba(0, 40, 60, 0.02);
+            transition: all 0.3s;
             text-align: center;
         }
-        .stats-row .stat-card .stat-number {
+        .stat-card:hover {
+            border-color: rgba(0, 180, 216, 0.08);
+            transform: translateY(-2px);
+        }
+        .stat-card .stat-number {
+            font-family: 'Poppins', sans-serif;
             font-size: 1.6rem;
-            font-weight: 800;
-            color: #ffd966;
+            font-weight: 900;
+            color: #0077B6;
+            line-height: 1.2;
         }
-        .stats-row .stat-card .stat-label {
+        .stat-card .stat-label {
             font-size: 0.6rem;
+            font-weight: 600;
+            color: #7a9aae;
             text-transform: uppercase;
-            color: #a0a8b4;
             letter-spacing: 0.5px;
-            margin-top: 2px;
         }
-        .stats-row .stat-card .stat-number.urgent {
+        .stat-card .stat-icon {
+            font-size: 1.2rem;
+            color: #00B4D8;
+            opacity: 0.3;
+            display: block;
+            margin-bottom: 2px;
+        }
+        .stat-card.green .stat-number {
+            color: #00a86b;
+        }
+        .stat-card.gold .stat-number {
+            color: #f5a623;
+        }
+        .stat-card.red .stat-number {
             color: #e74c3c;
         }
-        .stats-row .stat-card .stat-number.inactive {
-            color: #7e8c8f;
+        .stat-card.aqua .stat-number {
+            color: #00B4D8;
         }
 
-        /* ─── FORM ─── */
-        .form-section {
-            background: #151b24;
-            border-radius: 20px;
-            padding: 20px;
-            border: 1px solid #2d3748;
-            margin-bottom: 24px;
+        /* ─── TOOLBAR ─── */
+        .admin-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
         }
-        .form-section .form-title {
-            font-size: 0.9rem;
-            font-weight: 800;
-            color: #f5a623;
-            margin-bottom: 16px;
+        .admin-toolbar .toolbar-left {
             display: flex;
             align-items: center;
-            gap: 8px;
-            letter-spacing: 0.5px;
-        }
-        .form-section .form-title i {
-            font-size: 1rem;
-        }
-        .form-group {
-            margin-bottom: 14px;
-        }
-        .form-group label {
-            display: block;
-            font-size: 0.65rem;
-            font-weight: 700;
-            color: #a0a8b4;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
-        }
-        .form-group .required {
-            color: #e74c3c;
-        }
-        .form-group select,
-        .form-group input,
-        .form-group textarea {
-            width: 100%;
-            background: #1c2330;
-            border: 1px solid #2d3748;
-            border-radius: 12px;
-            padding: 10px 14px;
-            font-size: 0.9rem;
-            color: #fff;
-            outline: none;
-            transition: 0.2s;
-            font-family: inherit;
-        }
-        .form-group select:focus,
-        .form-group input:focus,
-        .form-group textarea:focus {
-            border-color: #f5a623;
-            box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.2);
-        }
-        .form-group textarea {
-            resize: vertical;
-            min-height: 70px;
-        }
-        .form-group .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 6px 0;
-        }
-        .form-group .checkbox-group input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            accent-color: #f5a623;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        .form-group .checkbox-group label {
-            text-transform: none;
-            font-weight: 600;
-            font-size: 0.8rem;
-            color: #cbd5e1;
-            cursor: pointer;
-            margin-bottom: 0;
-        }
-        .form-group .checkbox-group label .urgent-label {
-            color: #e74c3c;
-            font-weight: 800;
-        }
-        .form-row {
-            display: flex;
             gap: 12px;
             flex-wrap: wrap;
         }
-        .form-row .form-group {
-            flex: 1;
-            min-width: 140px;
-        }
-
-        .form-actions {
+        .admin-toolbar .toolbar-left .filter-group {
             display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 60px;
+            padding: 4px 4px 4px 16px;
+            border: 1px solid rgba(0, 180, 216, 0.04);
+        }
+        .admin-toolbar .toolbar-left .filter-group select {
+            background: transparent;
+            border: none;
+            padding: 6px 12px 6px 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #2a3a4a;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+        }
+        .admin-toolbar .toolbar-left .filter-group select option {
+            background: #fff;
+        }
+        .admin-toolbar .toolbar-left .filter-group .filter-label {
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: #7a9aae;
+            letter-spacing: 0.3px;
+        }
+        .admin-toolbar .toolbar-left .search-box {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 60px;
+            padding: 4px 4px 4px 16px;
+            border: 1px solid rgba(0, 180, 216, 0.04);
+        }
+        .admin-toolbar .toolbar-left .search-box input {
+            background: transparent;
+            border: none;
+            padding: 6px 4px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #2a3a4a;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            width: 140px;
+        }
+        .admin-toolbar .toolbar-left .search-box input::placeholder {
+            color: #8aa8b8;
+        }
+        .admin-toolbar .toolbar-left .search-box .search-icon {
+            color: #8aa8b8;
+            font-size: 0.7rem;
+        }
+        .admin-toolbar .toolbar-right {
+            display: flex;
+            align-items: center;
             gap: 10px;
             flex-wrap: wrap;
-            margin-top: 6px;
         }
-        .form-actions button {
-            padding: 10px 24px;
-            border-radius: 40px;
+        .admin-toolbar .toolbar-right .btn-create {
+            background: linear-gradient(135deg, #00B4D8, #0077B6);
+            color: #fff;
             border: none;
+            padding: 10px 24px;
+            border-radius: 60px;
             font-weight: 800;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s;
+            font-family: 'Inter', sans-serif;
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            box-shadow: 0 4px 20px rgba(0, 180, 216, 0.12);
         }
-        .form-actions .btn-submit {
-            background: linear-gradient(135deg, #2ecc71, #27ae60);
-            color: #fff;
-            flex: 1;
-            justify-content: center;
+        .admin-toolbar .toolbar-right .btn-create:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 180, 216, 0.18);
         }
-        .form-actions .btn-submit:hover {
+        .admin-toolbar .toolbar-right .btn-create:active {
             transform: scale(0.97);
-            background: linear-gradient(135deg, #3ddc84, #2ecc71);
         }
-        .form-actions .btn-submit:disabled {
+        .admin-toolbar .toolbar-right .sort-label {
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: #7a9aae;
+        }
+        .admin-toolbar .toolbar-right select {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(0, 180, 216, 0.04);
+            border-radius: 60px;
+            padding: 6px 14px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #2a3a4a;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+        }
+
+        /* ─── ANNOUNCEMENTS GRID ─── */
+        .announcements-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .announce-card {
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 28px;
+            border: 1px solid rgba(0, 180, 216, 0.04);
+            box-shadow: 0 4px 30px rgba(0, 40, 60, 0.02);
+            padding: 20px 20px 16px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .announce-card:hover {
+            border-color: rgba(0, 180, 216, 0.08);
+            box-shadow: 0 8px 40px rgba(0, 40, 60, 0.04);
+            transform: translateY(-2px);
+        }
+        .announce-card.pinned {
+            border-left: 4px solid #f5a623;
+            background: rgba(255, 255, 255, 0.8);
+        }
+        .announce-card.pinned::before {
+            content: '📌';
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            font-size: 1.2rem;
+            opacity: 0.6;
+        }
+        .announce-card .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+            gap: 10px;
+        }
+        .announce-card .card-top .card-icon {
+            font-size: 2rem;
+            line-height: 1;
+            flex-shrink: 0;
+            width: 44px;
+            text-align: center;
+        }
+        .announce-card .card-top .card-title-group {
+            flex: 1;
+            min-width: 0;
+        }
+        .announce-card .card-top .card-title-group .card-title {
+            font-weight: 800;
+            font-size: 0.95rem;
+            color: #1a2332;
+            word-break: break-word;
+        }
+        .announce-card .card-top .card-title-group .card-category {
+            font-size: 0.55rem;
+            font-weight: 700;
+            color: #7a9aae;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
+            background: rgba(0, 180, 216, 0.04);
+            padding: 1px 12px;
+            border-radius: 30px;
+            border: 1px solid rgba(0, 180, 216, 0.02);
+            margin-top: 2px;
+        }
+        .announce-card .card-body {
+            font-size: 0.78rem;
+            color: #2a3a4a;
+            line-height: 1.7;
+            margin: 6px 0 10px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .announce-card .card-body.expanded {
+            -webkit-line-clamp: unset;
+            display: block;
+        }
+        .announce-card .card-body .read-more {
+            color: #00B4D8;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.7rem;
+        }
+        .announce-card .card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 10px;
+            font-size: 0.55rem;
+            color: #7a9aae;
+            margin: 6px 0 8px;
+            padding-top: 6px;
+            border-top: 1px solid rgba(0, 180, 216, 0.02);
+        }
+        .announce-card .card-meta .meta-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .announce-card .card-meta .meta-item i {
+            font-size: 0.6rem;
+            color: #00B4D8;
+            opacity: 0.5;
+        }
+        .announce-card .card-flags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin: 4px 0 6px;
+        }
+        .announce-card .card-flags .flag-tag {
+            font-size: 0.5rem;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 30px;
+            background: rgba(0, 180, 216, 0.04);
+            color: #0077B6;
+            border: 1px solid rgba(0, 180, 216, 0.04);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .announce-card .card-flags .flag-tag.active-true {
+            background: rgba(0, 168, 107, 0.06);
+            color: #00a86b;
+            border-color: rgba(0, 168, 107, 0.06);
+        }
+        .announce-card .card-flags .flag-tag.active-false {
+            background: rgba(231, 76, 60, 0.06);
+            color: #e74c3c;
+            border-color: rgba(231, 76, 60, 0.06);
+        }
+        .announce-card .card-flags .flag-tag.headline-true {
+            background: rgba(245, 166, 35, 0.06);
+            color: #f5a623;
+            border-color: rgba(245, 166, 35, 0.06);
+        }
+        .announce-card .card-flags .flag-tag.banner-true {
+            background: rgba(0, 180, 216, 0.06);
+            color: #00B4D8;
+            border-color: rgba(0, 180, 216, 0.06);
+        }
+        .announce-card .card-flags .flag-tag.popup-true {
+            background: rgba(155, 89, 182, 0.06);
+            color: #8e44ad;
+            border-color: rgba(155, 89, 182, 0.06);
+        }
+        .announce-card .card-status {
+            display: inline-block;
+            padding: 2px 12px;
+            border-radius: 30px;
+            font-size: 0.55rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            background: rgba(0, 180, 216, 0.04);
+            color: #00B4D8;
+            border: 1px solid rgba(0, 180, 216, 0.04);
+        }
+        .announce-card .card-status.live {
+            background: rgba(0, 168, 107, 0.06);
+            color: #00a86b;
+            border-color: rgba(0, 168, 107, 0.06);
+        }
+        .announce-card .card-status.scheduled {
+            background: rgba(52, 152, 219, 0.06);
+            color: #3498db;
+            border-color: rgba(52, 152, 219, 0.06);
+        }
+        .announce-card .card-status.expiring {
+            background: rgba(245, 166, 35, 0.06);
+            color: #f5a623;
+            border-color: rgba(245, 166, 35, 0.06);
+        }
+        .announce-card .card-status.expired {
+            background: rgba(231, 76, 60, 0.06);
+            color: #e74c3c;
+            border-color: rgba(231, 76, 60, 0.06);
+        }
+        .announce-card .card-status.archived {
+            background: rgba(120, 140, 160, 0.06);
+            color: #7a8a9e;
+            border-color: rgba(120, 140, 160, 0.04);
+        }
+        .announce-card .card-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+            border-top: 1px solid rgba(0, 180, 216, 0.02);
+            padding-top: 10px;
+        }
+        .announce-card .card-actions .act-btn {
+            background: rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(0, 180, 216, 0.04);
+            border-radius: 40px;
+            padding: 4px 14px;
+            font-size: 0.6rem;
+            font-weight: 700;
+            color: #2a3a4a;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Inter', sans-serif;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .announce-card .card-actions .act-btn:hover {
+            background: rgba(0, 180, 216, 0.04);
+            border-color: rgba(0, 180, 216, 0.08);
+        }
+        .announce-card .card-actions .act-btn.pin-btn {
+            color: #f5a623;
+        }
+        .announce-card .card-actions .act-btn.pin-btn:hover {
+            background: rgba(245, 166, 35, 0.04);
+            border-color: rgba(245, 166, 35, 0.08);
+        }
+        .announce-card .card-actions .act-btn.delete-btn {
+            color: #e74c3c;
+        }
+        .announce-card .card-actions .act-btn.delete-btn:hover {
+            background: rgba(231, 76, 60, 0.04);
+            border-color: rgba(231, 76, 60, 0.08);
+        }
+        .announce-card .card-actions .act-btn.archive-btn {
+            color: #7a8a9e;
+        }
+        .announce-card .card-actions .act-btn.archive-btn:hover {
+            background: rgba(120, 140, 160, 0.04);
+            border-color: rgba(120, 140, 160, 0.08);
+        }
+        .announce-card .card-actions .act-btn.view-btn {
+            color: #00B4D8;
+        }
+        .announce-card .card-actions .act-btn.view-btn:hover {
+            background: rgba(0, 180, 216, 0.04);
+            border-color: rgba(0, 180, 216, 0.08);
+        }
+        .announce-card .card-actions .act-btn.duplicate-btn {
+            color: #8e44ad;
+        }
+        .announce-card .card-actions .act-btn.duplicate-btn:hover {
+            background: rgba(155, 89, 182, 0.04);
+            border-color: rgba(155, 89, 182, 0.08);
+        }
+        .announce-card .card-actions .act-btn.toggle-btn {
+            color: #00a86b;
+        }
+        .announce-card .card-actions .act-btn.toggle-btn:hover {
+            background: rgba(0, 168, 107, 0.04);
+            border-color: rgba(0, 168, 107, 0.08);
+        }
+        .announce-card .card-actions .act-btn.toggle-btn.inactive {
+            color: #e74c3c;
+        }
+        .announce-card .card-actions .act-btn.toggle-btn.inactive:hover {
+            background: rgba(231, 76, 60, 0.04);
+            border-color: rgba(231, 76, 60, 0.08);
+        }
+        .announce-card .card-visibility {
+            font-size: 0.5rem;
+            color: #8aa8b8;
+            margin-top: 4px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px 8px;
+        }
+        .announce-card .card-visibility .vis-tag {
+            background: rgba(0, 180, 216, 0.02);
+            padding: 1px 10px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 180, 216, 0.02);
+        }
+        .announce-card .card-countdown {
+            background: rgba(245, 166, 35, 0.04);
+            border-radius: 16px;
+            padding: 8px 14px;
+            margin: 8px 0 4px;
+            border: 1px solid rgba(245, 166, 35, 0.06);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .announce-card .card-countdown .cd-label {
+            font-size: 0.55rem;
+            font-weight: 700;
+            color: #f5a623;
+            letter-spacing: 0.3px;
+        }
+        .announce-card .card-countdown .cd-digits {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 900;
+            font-size: 0.85rem;
+            color: #1a2332;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .announce-card .card-countdown .cd-digits .cd-unit {
+            font-size: 0.5rem;
+            font-weight: 600;
+            color: #7a9aae;
+        }
+
+        /* ─── EMPTY STATE ─── */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #7a9aae;
+        }
+        .empty-state .empty-icon {
+            font-size: 4rem;
+            opacity: 0.2;
+            display: block;
+            margin-bottom: 12px;
+        }
+        .empty-state h3 {
+            font-weight: 700;
+            color: #2a3a4a;
+            font-size: 1.1rem;
+        }
+        .empty-state p {
+            font-size: 0.8rem;
+            max-width: 400px;
+            margin: 4px auto 0;
+        }
+
+        /* ─── MODAL (Create/Edit) ─── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 40, 60, 0.35);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            z-index: 99999;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 30px 16px;
+            overflow-y: auto;
+            animation: modalFade 0.3s ease;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        @keyframes modalFade {
+            from {
+                opacity: 0;
+                transform: scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        .modal-box {
+            max-width: 780px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-radius: 40px;
+            border: 1px solid rgba(0, 180, 216, 0.06);
+            box-shadow: 0 40px 100px rgba(0, 40, 60, 0.06);
+            padding: 32px 30px;
+            margin: 20px auto;
+            animation: modalSlide 0.4s ease;
+        }
+        @keyframes modalSlide {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .modal-box .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(0, 180, 216, 0.04);
+        }
+        .modal-box .modal-header h2 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #0077B6;
+        }
+        .modal-box .modal-header .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.6rem;
+            color: #8aa8b8;
+            cursor: pointer;
+            transition: 0.3s;
+            line-height: 1;
+        }
+        .modal-box .modal-header .modal-close:hover {
+            color: #1a2332;
+            transform: rotate(90deg);
+        }
+        .modal-box .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px 18px;
+        }
+        .modal-box .form-grid .full-width {
+            grid-column: 1 / -1;
+        }
+        .modal-box .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .modal-box .form-group label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #2a3a4a;
+            letter-spacing: 0.3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .modal-box .form-group label .label-icon {
+            color: #00B4D8;
+            font-size: 0.8rem;
+        }
+        .modal-box .form-group input,
+        .modal-box .form-group select,
+        .modal-box .form-group textarea {
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(0, 180, 216, 0.06);
+            border-radius: 16px;
+            padding: 10px 14px;
+            font-size: 0.85rem;
+            color: #1a2332;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s;
+            width: 100%;
+        }
+        .modal-box .form-group input:focus,
+        .modal-box .form-group select:focus,
+        .modal-box .form-group textarea:focus {
+            border-color: #00B4D8;
+            box-shadow: 0 0 0 4px rgba(0, 180, 216, 0.04);
+            background: rgba(255, 255, 255, 0.85);
+        }
+        .modal-box .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        .modal-box .form-group .char-count {
+            font-size: 0.5rem;
+            color: #8aa8b8;
+            text-align: right;
+            margin-top: 2px;
+        }
+        .modal-box .form-group .checkbox-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            padding-top: 4px;
+        }
+        .modal-box .form-group .checkbox-row label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #2a3a4a;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+        .modal-box .form-group .checkbox-row label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #00B4D8;
+            cursor: pointer;
+            border-radius: 6px;
+        }
+        .modal-box .form-group .color-picker-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .modal-box .form-group .color-picker-row input[type="color"] {
+            width: 44px;
+            height: 44px;
+            padding: 2px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 180, 216, 0.06);
+            cursor: pointer;
+            background: transparent;
+        }
+        .modal-box .form-group .color-picker-row .color-hex {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #7a9aae;
+        }
+        .modal-box .form-group .visibility-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 8px;
+        }
+        .category-grid .cat-chip {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 10px;
+            border-radius: 12px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1.5px solid transparent;
+            transition: 0.2s;
+            user-select: none;
+            background: var(--cat-bg, rgba(0,180,216,0.05));
+            color: var(--cat-color, #2a3a4a);
+        }
+        .category-grid .cat-chip .cat-check {
+            width: 14px; height: 14px; border-radius: 4px;
+            border: 1.5px solid currentColor;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.55rem; flex-shrink: 0;
+        }
+        .category-grid .cat-chip.active {
+            border-color: var(--cat-color, #00B4D8);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .category-grid .cat-chip.active .cat-check::after { content: '✓'; }
+        /* ─── BULK TOOLBAR ─── */
+        .bulk-toolbar {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0,180,216,0.06);
+            border: 1px solid rgba(0,180,216,0.15);
+            border-radius: 14px;
+            padding: 10px 16px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        .bulk-toolbar.active { display: flex; }
+        .bulk-toolbar .bulk-count { font-size: 0.7rem; font-weight: 700; color: #0077B6; }
+        .bulk-toolbar button {
+            font-size: 0.65rem; font-weight: 700; padding: 6px 12px; border-radius: 10px;
+            border: none; cursor: pointer; background: #00B4D8; color: #fff;
+        }
+        .bulk-toolbar button.danger { background: #e74c3c; }
+        .bulk-toolbar button.secondary { background: #7a9aae; }
+        .announce-card .card-select {
+            position: absolute; top: 10px; left: 10px; width: 18px; height: 18px; z-index: 5; cursor: pointer;
+        }
+        .announce-card { position: relative; }
+        /* ─── TICKER SETTINGS / RECYCLE / LOG MODALS ─── */
+        .side-modal-overlay {
+            position: fixed; inset: 0; background: rgba(10,20,30,0.55); z-index: 100000;
+            display: none; align-items: center; justify-content: center; padding: 20px;
+        }
+        .side-modal-overlay.active { display: flex; }
+        .side-modal-box {
+            background: #fff; border-radius: 20px; max-width: 640px; width: 100%;
+            max-height: 88vh; overflow-y: auto; padding: 24px;
+        }
+        .side-modal-box h3 { font-family:'Poppins',sans-serif; margin-bottom: 16px; display:flex; align-items:center; gap:8px; }
+        .side-modal-box .close-x { float: right; cursor: pointer; font-size: 1.1rem; color: #7a9aae; }
+        .ticker-settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+        .ticker-settings-grid label { font-size: 0.65rem; font-weight: 700; color: #2a3a4a; display:block; margin-bottom:4px; }
+        .ticker-settings-grid input, .ticker-settings-grid select { width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #dce8ef; }
+        .log-entry { padding: 8px 0; border-bottom: 1px solid #eef4f8; font-size: 0.65rem; color: #2a3a4a; }
+        .log-entry b { color: #0077B6; }
+        .recycle-item-actions { display:flex; gap:8px; margin-top:6px; }
+        .modal-box .form-group .visibility-tags .vis-tag {
+            background: rgba(0, 180, 216, 0.02);
+            padding: 2px 12px;
+            border-radius: 30px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: #2a3a4a;
+            border: 1px solid rgba(0, 180, 216, 0.02);
+            cursor: pointer;
+            transition: 0.2s;
+            user-select: none;
+        }
+        .modal-box .form-group .visibility-tags .vis-tag:hover {
+            background: rgba(0, 180, 216, 0.04);
+            border-color: rgba(0, 180, 216, 0.06);
+        }
+        .modal-box .form-group .visibility-tags .vis-tag.active {
+            background: rgba(0, 180, 216, 0.06);
+            border-color: #00B4D8;
+            color: #0077B6;
+        }
+        .modal-box .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(0, 180, 216, 0.04);
+            flex-wrap: wrap;
+        }
+        .modal-box .form-actions .btn-submit {
+            flex: 1;
+            min-width: 140px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 60px;
+            background: linear-gradient(135deg, #00B4D8, #0077B6);
+            color: #fff;
+            font-weight: 800;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Inter', sans-serif;
+            box-shadow: 0 4px 20px rgba(0, 180, 216, 0.08);
+        }
+        .modal-box .form-actions .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 180, 216, 0.12);
+        }
+        .modal-box .form-actions .btn-submit:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             transform: none !important;
         }
-        .form-actions .btn-cancel {
-            background: transparent;
-            border: 1px solid #888;
-            color: #888;
-        }
-        .form-actions .btn-cancel:hover {
-            border-color: #fff;
-            color: #fff;
-        }
-        .form-actions .btn-delete {
-            background: #3d1e1e;
-            border: 1px solid #e74c3c;
-            color: #e74c3c;
-        }
-        .form-actions .btn-delete:hover {
-            background: #e74c3c;
-            color: #fff;
-        }
-
-        .form-feedback {
-            margin-top: 12px;
-            padding: 10px 14px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            display: none;
-        }
-        .form-feedback.success {
-            display: block;
-            background: #1e3d2f;
-            color: #2ecc71;
-            border: 1px solid #2ecc7130;
-        }
-        .form-feedback.error {
-            display: block;
-            background: #3d1e1e;
-            color: #e74c3c;
-            border: 1px solid #e74c3c30;
-        }
-        .form-feedback.info {
-            display: block;
-            background: #1e2a3a;
-            color: #5dade2;
-            border: 1px solid #5dade230;
-        }
-
-        /* ─── LIST ─── */
-        .list-section {
-            background: #151b24;
-            border-radius: 20px;
-            padding: 20px;
-            border: 1px solid #2d3748;
-        }
-        .list-section .list-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px 12px;
-            margin-bottom: 16px;
-        }
-        .list-section .list-header .list-title {
-            font-size: 0.9rem;
-            font-weight: 800;
-            color: #f5a623;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .list-section .list-header .list-title i {
-            font-size: 1rem;
-        }
-        .list-section .list-header .list-count {
-            font-size: 0.7rem;
-            color: #a0a8b4;
-            background: #1c2330;
-            padding: 4px 14px;
-            border-radius: 40px;
-            font-weight: 600;
-        }
-        .list-section .list-filters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            margin-bottom: 14px;
-        }
-        .list-section .list-filters .filter-btn {
-            padding: 4px 14px;
-            border-radius: 30px;
-            border: 1px solid #2d3748;
-            background: transparent;
-            color: #a0a8b4;
-            font-size: 0.6rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            letter-spacing: 0.3px;
-        }
-        .list-section .list-filters .filter-btn:hover {
-            border-color: #f5a623;
-            color: #f5a623;
-        }
-        .list-section .list-filters .filter-btn.active {
-            background: #f5a623;
-            color: #000;
-            border-color: #f5a623;
-        }
-        .list-section .list-filters .filter-btn .badge-count {
-            background: #1c2330;
-            padding: 0 6px;
-            border-radius: 20px;
-            font-size: 0.5rem;
-            margin-left: 3px;
-        }
-        .list-section .list-filters .filter-btn.active .badge-count {
-            background: rgba(0, 0, 0, 0.2);
-        }
-
-        .list-items {
-            max-height: 520px;
-            overflow-y: auto;
-            padding-right: 4px;
-        }
-        .list-items::-webkit-scrollbar {
-            width: 4px;
-        }
-        .list-items::-webkit-scrollbar-track {
-            background: #0f141c;
-            border-radius: 10px;
-        }
-        .list-items::-webkit-scrollbar-thumb {
-            background: #f5a623;
-            border-radius: 10px;
-        }
-
-        .list-item {
-            background: #0f141c;
-            border-radius: 14px;
-            padding: 14px 16px;
-            margin-bottom: 10px;
-            border-left: 5px solid #2d3748;
-            transition: 0.2s;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            flex-wrap: wrap;
-            gap: 8px 12px;
-        }
-        .list-item:hover {
-            border-left-color: #f5a623;
-            background: #131a24;
-        }
-        .list-item .item-info {
-            flex: 1;
-            min-width: 180px;
-        }
-        .list-item .item-info .item-title {
-            font-size: 0.9rem;
+        .modal-box .form-actions .btn-cancel {
+            padding: 12px 24px;
+            border-radius: 60px;
+            border: 1px solid rgba(0, 180, 216, 0.04);
+            background: rgba(255, 255, 255, 0.4);
+            color: #7a9aae;
             font-weight: 700;
-            color: #ffd966;
-            display: flex;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.3s;
+            font-family: 'Inter', sans-serif;
+        }
+        .modal-box .form-actions .btn-cancel:hover {
+            border-color: rgba(0, 180, 216, 0.08);
+            color: #2a3a4a;
+        }
+        .modal-box .form-actions .btn-preview {
+            padding: 12px 20px;
+            border-radius: 60px;
+            border: 1px solid rgba(0, 180, 216, 0.04);
+            background: rgba(0, 180, 216, 0.02);
+            color: #00B4D8;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.3s;
+            font-family: 'Inter', sans-serif;
+            display: inline-flex;
             align-items: center;
             gap: 6px;
-            flex-wrap: wrap;
         }
-        .list-item .item-info .item-title .urgent-tag {
-            font-size: 0.5rem;
-            font-weight: 800;
-            color: #e74c3c;
-            background: #3d1e1e;
-            padding: 0 10px;
-            border-radius: 30px;
-            animation: urgentPulse 1.2s ease-in-out infinite;
-        }
-        @keyframes urgentPulse {
-            0%,
-            100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.5;
-            }
-        }
-        .list-item .item-info .item-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px 12px;
-            margin-top: 3px;
-        }
-        .list-item .item-info .item-meta .meta-cat {
-            font-size: 0.55rem;
-            font-weight: 700;
-            padding: 1px 10px;
-            border-radius: 30px;
-            background: #1e293b;
-            color: #a0b3d9;
-        }
-        .list-item .item-info .item-meta .meta-cat.maintenance {
-            background: #2a3a2a;
-            color: #2ecc71;
-        }
-        .list-item .item-info .item-meta .meta-cat.new_packages {
-            background: #1e2a4a;
-            color: #5dade2;
-        }
-        .list-item .item-info .item-meta .meta-cat.offers_discounts {
-            background: #3d2e1e;
-            color: #f5a623;
-        }
-        .list-item .item-info .item-meta .meta-cat.outage_alert {
-            background: #3d1e1e;
-            color: #e74c3c;
-        }
-        .list-item .item-info .item-meta .meta-cat.general_news {
-            background: #1e293b;
-            color: #a0b3d9;
-        }
-        .list-item .item-info .item-meta .meta-time {
-            font-size: 0.5rem;
-            color: #7e8c8f;
-        }
-        .list-item .item-info .item-desc {
-            font-size: 0.7rem;
-            color: #cbd5e1;
-            margin-top: 4px;
-            line-height: 1.4;
-        }
-        .list-item .item-status {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 4px;
-            flex-shrink: 0;
-        }
-        .list-item .item-status .status-badge-item {
-            font-size: 0.55rem;
-            font-weight: 700;
-            padding: 2px 12px;
-            border-radius: 30px;
-            background: #1e3d2f;
-            color: #2ecc71;
-        }
-        .list-item .item-status .status-badge-item.inactive {
-            background: #2a2a2a;
-            color: #888;
-        }
-        .list-item .item-actions {
-            display: flex;
-            gap: 4px;
-            flex-shrink: 0;
-        }
-        .list-item .item-actions button {
-            background: none;
-            border: 1px solid #2d3748;
-            border-radius: 30px;
-            padding: 4px 12px;
-            font-size: 0.55rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.2s;
-            color: #a0a8b4;
-        }
-        .list-item .item-actions .edit-btn:hover {
-            border-color: #f5a623;
-            color: #f5a623;
-            background: #1c2330;
-        }
-        .list-item .item-actions .delete-btn:hover {
-            border-color: #e74c3c;
-            color: #e74c3c;
-            background: #1c2330;
-        }
-        .list-item .item-actions .toggle-btn:hover {
-            border-color: #2ecc71;
-            color: #2ecc71;
-            background: #1c2330;
+        .modal-box .form-actions .btn-preview:hover {
+            background: rgba(0, 180, 216, 0.04);
+            border-color: rgba(0, 180, 216, 0.08);
         }
 
-        .list-empty {
-            text-align: center;
-            padding: 32px 0;
-            color: #7e8c8f;
-            font-size: 0.8rem;
-        }
-        .list-empty i {
-            font-size: 2rem;
-            display: block;
-            margin-bottom: 8px;
-            color: #2d3748;
-        }
-
-        /* ─── TICKER PREVIEW ─── */
-        .ticker-preview {
-            background: #0a0e14;
-            border-radius: 14px;
-            padding: 10px 16px;
-            margin-bottom: 20px;
-            border: 1px solid #2d3748;
-            display: flex;
+        /* ─── PREVIEW MODAL ─── */
+        .preview-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 40, 60, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 999998;
+            justify-content: center;
             align-items: center;
-            gap: 12px;
-            overflow: hidden;
+            padding: 30px 16px;
         }
-        .ticker-preview .preview-label {
+        .preview-overlay.active {
+            display: flex;
+        }
+        .preview-box {
+            max-width: 540px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-radius: 40px;
+            border: 1px solid rgba(0, 180, 216, 0.06);
+            box-shadow: 0 40px 100px rgba(0, 40, 60, 0.06);
+            padding: 32px 28px;
+            animation: modalSlide 0.4s ease;
+        }
+        .preview-box .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .preview-box .preview-header h3 {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 800;
+            color: #0077B6;
+            font-size: 1.1rem;
+        }
+        .preview-box .preview-header .preview-close {
+            background: none;
+            border: none;
+            font-size: 1.6rem;
+            color: #8aa8b8;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .preview-box .preview-header .preview-close:hover {
+            color: #1a2332;
+        }
+        .preview-box .preview-content {
+            text-align: center;
+        }
+        .preview-box .preview-content .preview-icon {
+            font-size: 3.6rem;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .preview-box .preview-content .preview-title {
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: #1a2332;
+        }
+        .preview-box .preview-content .preview-category {
             font-size: 0.6rem;
             font-weight: 700;
-            color: #f5a623;
+            color: #7a9aae;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            flex-shrink: 0;
-        }
-        .ticker-preview .preview-track {
-            display: flex;
-            white-space: nowrap;
-            animation: tickerScroll 20s linear infinite;
-            gap: 30px;
-            flex: 1;
-            overflow: hidden;
-        }
-        .ticker-preview .preview-track .preview-item {
-            font-size: 0.7rem;
-            color: #e0e8f0;
-            font-weight: 500;
-        }
-        .ticker-preview .preview-track .preview-item .preview-cat {
-            font-size: 0.5rem;
-            font-weight: 700;
-            padding: 0 8px;
+            background: rgba(0, 180, 216, 0.04);
+            padding: 2px 14px;
             border-radius: 30px;
-            margin-right: 4px;
-            background: #1e293b;
-            color: #a0b3d9;
+            display: inline-block;
+            margin: 4px 0 8px;
         }
-        .ticker-preview .preview-track .preview-item .preview-cat.urgent {
-            background: #3d1e1e;
-            color: #e74c3c;
+        .preview-box .preview-content .preview-body {
+            font-size: 0.85rem;
+            color: #2a3a4a;
+            line-height: 1.8;
+            text-align: left;
+            background: rgba(255, 255, 255, 0.3);
+            padding: 14px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 180, 216, 0.02);
+            margin: 8px 0;
+            white-space: pre-wrap;
         }
-        .ticker-preview .preview-empty {
-            color: #7e8c8f;
-            font-size: 0.7rem;
+        .preview-box .preview-content .preview-meta {
+            font-size: 0.6rem;
+            color: #7a9aae;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            justify-content: center;
+            margin: 8px 0;
         }
-        @keyframes tickerScroll {
-            0% {
-                transform: translateX(100%);
-            }
-            100% {
-                transform: translateX(-100%);
-            }
+        .preview-box .preview-content .preview-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .preview-box .preview-content .preview-meta i {
+            color: #00B4D8;
+            opacity: 0.5;
         }
 
-        /* ─── FOOTER ─── */
-        .admin-footer {
-            text-align: center;
-            padding: 16px 20px;
-            font-size: 0.6rem;
-            color: #7e8c8f;
-            border-top: 1px solid #1e293b;
-            background: #0f141c;
+        /* ─── TOAST ─── */
+        .toast-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 999999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 400px;
+            width: 90%;
         }
-        .admin-footer .footer-brand {
-            font-weight: 800;
-            color: #f5a623;
-            font-size: 0.75rem;
+        .toast {
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 14px 20px;
+            border: 1px solid rgba(0, 180, 216, 0.06);
+            box-shadow: 0 8px 40px rgba(0, 40, 60, 0.04);
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #1a2332;
+            animation: toastSlide 0.4s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-left: 4px solid #00B4D8;
         }
-        .admin-footer .footer-brand span {
-            color: #ffd966;
+        .toast.error {
+            border-left-color: #e74c3c;
         }
-        .admin-footer .footer-dev {
-            margin-top: 2px;
-            color: #5a6a7a;
+        .toast.success {
+            border-left-color: #00a86b;
         }
-        .admin-footer .footer-dev .dev-name {
-            color: #f5a623;
-            font-weight: 700;
+        .toast .toast-icon {
+            font-size: 1.2rem;
+            flex-shrink: 0;
         }
-        .admin-footer .back-link {
-            display: inline-block;
-            margin-top: 6px;
-            color: #f5a623;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 0.7rem;
-        }
-        .admin-footer .back-link:hover {
-            text-decoration: underline;
+        @keyframes toastSlide {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
 
         /* ─── RESPONSIVE ─── */
-        @media (max-width: 600px) {
-            .admin-body {
-                padding: 16px 14px;
+        @media (max-width: 768px) {
+            .modal-box .form-grid {
+                grid-template-columns: 1fr;
             }
-            .admin-header h1 {
-                font-size: 1.4rem;
+            .modal-box .form-grid .full-width {
+                grid-column: 1;
             }
-            .form-row {
-                flex-direction: column;
+            .modal-box {
+                padding: 24px 18px;
             }
-            .form-row .form-group {
-                min-width: auto;
+            .announcements-grid {
+                grid-template-columns: 1fr;
             }
-            .list-item {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .admin-topbar {
+                padding: 12px 16px;
+            }
+            .admin-topbar .brand {
+                font-size: 1rem;
+            }
+            .admin-toolbar {
                 flex-direction: column;
                 align-items: stretch;
             }
-            .list-item .item-status {
-                flex-direction: row;
-                align-items: center;
-                justify-content: space-between;
-                width: 100%;
-            }
-            .list-item .item-actions {
-                width: 100%;
-                justify-content: flex-start;
-                margin-top: 4px;
-            }
-            .stats-row .stat-card {
-                min-width: 70px;
-                padding: 10px 12px;
-            }
-            .stats-row .stat-card .stat-number {
-                font-size: 1.2rem;
-            }
-            .form-actions button {
-                flex: 1;
-                justify-content: center;
-                padding: 8px 16px;
-                font-size: 0.75rem;
-            }
-            .ticker-preview {
+            .admin-toolbar .toolbar-left {
                 flex-wrap: wrap;
-                gap: 6px;
             }
-            .ticker-preview .preview-track {
-                animation-duration: 15s;
+            .admin-toolbar .toolbar-left .search-box input {
+                width: 100px;
+            }
+            .admin-toolbar .toolbar-right .btn-create {
+                width: 100%;
+                justify-content: center;
+            }
+            .modal-box .form-actions {
+                flex-direction: column;
+            }
+            .modal-box .form-actions .btn-submit,
+            .modal-box .form-actions .btn-cancel,
+            .modal-box .form-actions .btn-preview {
+                width: 100%;
+                justify-content: center;
+            }
+            .preview-box {
+                padding: 24px 16px;
+            }
+            .toast-container {
+                bottom: 16px;
+                right: 16px;
+                left: 16px;
+                width: auto;
             }
         }
-        @media (max-width: 400px) {
-            .admin-header h1 {
-                font-size: 1.1rem;
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
             }
-            .stats-row .stat-card .stat-number {
-                font-size: 1rem;
+            .stat-card {
+                padding: 12px 10px;
             }
-            .stats-row .stat-card .stat-label {
-                font-size: 0.5rem;
+            .stat-card .stat-number {
+                font-size: 1.2rem;
             }
-            .list-item .item-info .item-title {
-                font-size: 0.8rem;
+            .admin-topbar .topbar-right .admin-badge {
+                font-size: 0.55rem;
+                padding: 2px 10px;
             }
-            .list-item .item-info .item-desc {
-                font-size: 0.65rem;
+            .login-card {
+                padding: 24px 18px;
+            }
+            .announce-card {
+                padding: 16px;
+            }
+            .modal-overlay {
+                padding: 16px 10px;
+            }
+            .modal-box {
+                padding: 18px 14px;
             }
         }
     </style>
 </head>
 <body>
 
-    <div class="admin-container">
+    <!-- ─── SPLASH SCREEN ─── -->
+    <div id="splashScreen">
+        <div class="splash-glow"></div>
+        <svg class="splash-crown" viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="splashGold" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#FFD700"/>
+                    <stop offset="50%" stop-color="#FFA500"/>
+                    <stop offset="100%" stop-color="#FFD700"/>
+                </linearGradient>
+                <radialGradient id="splashGem" cx="50%" cy="30%">
+                    <stop offset="0%" stop-color="#6dd5ed"/>
+                    <stop offset="100%" stop-color="#0077B6"/>
+                </radialGradient>
+            </defs>
+            <rect x="10" y="62" width="100" height="20" rx="6" fill="url(#splashGold)" stroke="#E6B800" stroke-width="1.2"/>
+            <polygon points="10,62 10,28 26,48 38,14 60,44 82,14 94,48 110,28 110,62" fill="url(#splashGold)" stroke="#E6B800" stroke-width="1.2" stroke-linejoin="round"/>
+            <ellipse cx="60" cy="53" rx="8" ry="8" fill="url(#splashGem)" stroke="#005f8a" stroke-width="1.2"/>
+            <ellipse cx="57" cy="50" rx="3" ry="2" fill="white" opacity="0.3" transform="rotate(-30 57 50)"/>
+            <ellipse cx="28" cy="58" rx="6" ry="6" fill="#FFD700" stroke="#b37800" stroke-width="1"/>
+            <ellipse cx="92" cy="58" rx="6" ry="6" fill="url(#splashGem)" stroke="#005f8a" stroke-width="1"/>
+            <circle cx="22" cy="38" r="2" fill="#FFD700"><animate attributeName="opacity" values="0;1;0" dur="1.5s" repeatCount="indefinite"/></circle>
+            <circle cx="60" cy="20" r="2.5" fill="#fff"><animate attributeName="opacity" values="0;1;0" dur="2s" begin="0.5s" repeatCount="indefinite"/></circle>
+            <circle cx="98" cy="38" r="2" fill="#FFD700"><animate attributeName="opacity" values="0;1;0" dur="1.8s" begin="1s" repeatCount="indefinite"/></circle>
+            <text x="60" y="77" font-size="9" text-anchor="middle" fill="#7a3a00" font-weight="900" letter-spacing="1.5" font-family="'Inter',sans-serif">D3 CROWN</text>
+        </svg>
+        <div class="splash-title">D3 CROWN FIBER</div>
+        <div class="splash-sub">⭐ Admin — Announcement Manager ⭐</div>
+        <div class="splash-loader"></div>
+    </div>
 
-        <!-- ─── HEADER ─── -->
-        <div class="admin-header">
-            <h1><i class="fas fa-bullhorn"></i> Announcement Manager</h1>
-            <div class="sub">D3 Crown Fiber — Admin Panel</div>
-            <div id="connectionStatus" class="status-badge"><i class="fas fa-circle"></i> Connected</div>
+    <!-- ─── TOAST CONTAINER ─── -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- ─── LOGIN SCREEN ─── -->
+    <div id="loginScreen">
+        <div class="login-card">
+            <span class="logo-icon">👑</span>
+            <h1>D3 Crown Admin</h1>
+            <div class="sub">🔐 Announcement Management System</div>
+            <div class="input-group">
+                <label><i class="fas fa-envelope" style="color:#00B4D8;margin-right:4px;"></i> Email</label>
+                <input type="email" id="adminEmail" placeholder="admin@d3crown.com" autocomplete="email">
+            </div>
+            <div class="input-group">
+                <label><i class="fas fa-lock" style="color:#00B4D8;margin-right:4px;"></i> Password</label>
+                <input type="password" id="adminPassword" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <button class="login-btn" id="loginBtn">🔑 Sign In</button>
+            <div class="login-error" id="loginError"></div>
+            <div class="login-loader" id="loginLoader"></div>
+        </div>
+    </div>
+
+    <!-- ─── ADMIN PANEL ─── -->
+    <div id="adminPanel">
+
+        <!-- TOP BAR -->
+        <div class="admin-topbar">
+            <div class="brand">
+                <i class="fas fa-crown"></i>
+                D3<span>Crown</span> · Admin
+            </div>
+            <div class="topbar-right">
+                <span class="admin-badge"><i class="fas fa-shield-alt"></i> Announcement Manager</span>
+                <button class="btn-refresh" id="tickerSettingsBtn"><i class="fas fa-sliders-h"></i> Ticker Settings</button>
+                <button class="btn-refresh" id="recycleBinBtn"><i class="fas fa-trash-restore"></i> Recycle Bin</button>
+                <button class="btn-refresh" id="activityLogBtn"><i class="fas fa-history"></i> Activity Log</button>
+                <button class="btn-refresh" id="refreshBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
+                <button class="logout-admin-btn" id="logoutAdminBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
         </div>
 
-        <!-- ─── BODY ─── -->
-        <div class="admin-body">
-
-            <!-- ─── TICKER PREVIEW ─── -->
-            <div class="ticker-preview">
-                <span class="preview-label"><i class="fas fa-bolt"></i> Ticker</span>
-                <div class="preview-track" id="tickerPreviewTrack">
-                    <span class="preview-empty">No active announcements</span>
-                </div>
+        <!-- STATS -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card aqua">
+                <span class="stat-icon"><i class="fas fa-bullhorn"></i></span>
+                <div class="stat-number" id="statTotal">0</div>
+                <div class="stat-label">Total Announcements</div>
             </div>
-
-            <!-- ─── STATS ─── -->
-            <div class="stats-row" id="statsRow">
-                <div class="stat-card">
-                    <div class="stat-number" id="statTotal">0</div>
-                    <div class="stat-label">Total</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="statActive">0</div>
-                    <div class="stat-label">Active</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number urgent" id="statUrgent">0</div>
-                    <div class="stat-label">Urgent</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number inactive" id="statInactive">0</div>
-                    <div class="stat-label">Inactive</div>
-                </div>
+            <div class="stat-card aqua">
+                <span class="stat-icon"><i class="fas fa-flag"></i></span>
+                <div class="stat-number" id="statActive">0</div>
+                <div class="stat-label">Active</div>
             </div>
+            <div class="stat-card">
+                <span class="stat-icon"><i class="fas fa-file-alt"></i></span>
+                <div class="stat-number" id="statDrafts">0</div>
+                <div class="stat-label">Drafts</div>
+            </div>
+            <div class="stat-card gold">
+                <span class="stat-icon"><i class="fas fa-clock"></i></span>
+                <div class="stat-number" id="statScheduled">0</div>
+                <div class="stat-label">Scheduled</div>
+            </div>
+            <div class="stat-card green">
+                <span class="stat-icon"><i class="fas fa-check-circle"></i></span>
+                <div class="stat-number" id="statLive">0</div>
+                <div class="stat-label">Published</div>
+            </div>
+            <div class="stat-card red">
+                <span class="stat-icon"><i class="fas fa-times-circle"></i></span>
+                <div class="stat-number" id="statExpired">0</div>
+                <div class="stat-label">Expired</div>
+            </div>
+            <div class="stat-card gold">
+                <span class="stat-icon"><i class="fas fa-satellite-dish"></i></span>
+                <div class="stat-number" id="statTickerActive">0</div>
+                <div class="stat-label">Active Breaking News</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon"><i class="fas fa-calendar-alt"></i></span>
+                <div class="stat-number" id="statLastPublished">—</div>
+                <div class="stat-label">Last Published</div>
+            </div>
+        </div>
 
-            <!-- ─── FORM ─── -->
-            <div class="form-section" id="formSection">
-                <div class="form-title">
-                    <i class="fas fa-pen-fancy"></i>
-                    <span id="formTitle">Add New Announcement</span>
-                </div>
-
-                <div class="form-group">
-                    <label>Category <span class="required">*</span></label>
-                    <select id="annCategory">
-                        <option value="maintenance">🔧 Maintenance</option>
-                        <option value="new_packages">📦 New Packages</option>
-                        <option value="offers_discounts">🏷️ Offers / Discounts</option>
-                        <option value="outage_alert">⚠️ Outage Alert</option>
-                        <option value="general_news">📰 General News</option>
+        <!-- TOOLBAR -->
+        <div class="admin-toolbar">
+            <div class="toolbar-left">
+                <div class="filter-group">
+                    <span class="filter-label"><i class="fas fa-filter"></i> Status:</span>
+                    <select id="statusFilter">
+                        <option value="all">All</option>
+                        <option value="draft">📝 Draft</option>
+                        <option value="live">🟢 Published</option>
+                        <option value="scheduled">🔵 Scheduled</option>
+                        <option value="expiring">🟠 Expiring Soon</option>
+                        <option value="expired">🔴 Expired</option>
+                        <option value="archived">⚪ Archived</option>
                     </select>
                 </div>
-
-                <div class="form-group">
-                    <label>Title <span class="required">*</span> <span style="font-weight:400;color:#7e8c8f;font-size:0.55rem;text-transform:none;">(max 80 chars)</span></label>
-                    <input type="text" id="annTitle" placeholder="e.g. Scheduled Maintenance on Sunday" maxlength="80" />
+                <div class="filter-group">
+                    <span class="filter-label"><i class="fas fa-tag"></i> Category:</span>
+                    <select id="categoryFilter">
+                        <option value="all">All Categories</option>
+                    </select>
                 </div>
-
-                <div class="form-group">
-                    <label>Message <span class="required">*</span> <span style="font-weight:400;color:#7e8c8f;font-size:0.55rem;text-transform:none;">(max 500 chars)</span></label>
-                    <textarea id="annMessage" placeholder="Full announcement details…" maxlength="500"></textarea>
+                <div class="filter-group">
+                    <span class="filter-label"><i class="fas fa-flag"></i> Priority:</span>
+                    <select id="priorityFilter">
+                        <option value="all">All</option>
+                        <option value="critical">🚨 Critical</option>
+                        <option value="high">🔥 High</option>
+                        <option value="normal">🔵 Normal</option>
+                        <option value="low">🟢 Low</option>
+                    </select>
                 </div>
+                <div class="filter-group">
+                    <span class="filter-label"><i class="fas fa-flag"></i> Active:</span>
+                    <select id="activeFilter">
+                        <option value="all">All</option>
+                        <option value="true">✅ Active</option>
+                        <option value="false">⛔ Inactive</option>
+                    </select>
+                </div>
+                <div class="search-box">
+                    <span class="search-icon"><i class="fas fa-search"></i></span>
+                    <input type="text" id="searchInput" placeholder="Search announcements..." />
+                </div>
+            </div>
+            <div class="toolbar-right">
+                <span class="sort-label"><i class="fas fa-sort"></i> Sort:</span>
+                <select id="sortSelect">
+                    <option value="priority">🚩 Priority</option>
+                    <option value="latest">📅 Latest</option>
+                    <option value="oldest">📅 Oldest</option>
+                    <option value="title">🔤 Title A-Z</option>
+                    <option value="title_desc">🔤 Title Z-A</option>
+                </select>
+                <button class="btn-create" id="createAnnounceBtn"><i class="fas fa-plus-circle"></i> Create</button>
+            </div>
+        </div>
 
-                <div class="form-row">
+        <!-- BULK ACTIONS TOOLBAR -->
+        <div class="bulk-toolbar" id="bulkToolbar">
+            <span class="bulk-count" id="bulkCount">0 selected</span>
+            <button id="bulkPublishBtn"><i class="fas fa-check"></i> Publish</button>
+            <button id="bulkExpireBtn" class="secondary"><i class="fas fa-hourglass-end"></i> Expire</button>
+            <button id="bulkDeleteBtn" class="danger"><i class="fas fa-trash"></i> Delete</button>
+            <button id="bulkClearBtn" class="secondary"><i class="fas fa-times"></i> Clear</button>
+        </div>
+
+        <!-- ANNOUNCEMENTS GRID -->
+        <div class="announcements-grid" id="announcementsGrid">
+            <!-- Cards rendered by JS -->
+        </div>
+
+        <!-- EMPTY STATE -->
+        <div class="empty-state" id="emptyState" style="display:none;">
+            <span class="empty-icon">📢</span>
+            <h3>No Announcements Yet</h3>
+            <p>Create your first announcement to keep your clients informed about news, offers, and updates.</p>
+        </div>
+    </div>
+
+    <!-- ─── CREATE/EDIT MODAL ─── -->
+    <div class="modal-overlay" id="announceModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2 id="modalTitle">📢 Create Announcement</h2>
+                <button class="modal-close" id="modalCloseBtn">✕</button>
+            </div>
+            <form id="announceForm" autocomplete="off">
+                <div class="form-grid">
+                    <!-- Emoji -->
                     <div class="form-group">
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="annUrgent" />
-                            <label for="annUrgent"><span class="urgent-label">🚨</span> Mark as Urgent <span style="font-weight:400;color:#7e8c8f;font-size:0.65rem;">(push notification)</span></label>
-                        </div>
+                        <label><span class="label-icon"><i class="fas fa-icons"></i></span> Emoji <span style="color:#e74c3c;">*</span></label>
+                        <input type="text" id="formEmoji" placeholder="e.g., 🚨, 📢, 🌧" maxlength="4" value="📢" required>
+                    </div>
+
+                    <!-- Title -->
+                    <div class="form-group">
+                        <label><span class="label-icon"><i class="fas fa-heading"></i></span> Title <span style="color:#e74c3c;">*</span></label>
+                        <input type="text" id="formTitle" placeholder="Announcement title" maxlength="120" required>
+                        <div class="char-count"><span id="titleCount">0</span>/120</div>
+                    </div>
+
+                    <!-- Category (18-type checkmark grid) -->
+                    <div class="form-group full-width">
+                        <label><span class="label-icon"><i class="fas fa-tag"></i></span> Category <span style="color:#e74c3c;">*</span></label>
+                        <div class="category-grid" id="categoryGrid"></div>
+                        <input type="hidden" id="formCategory">
+                    </div>
+
+                    <!-- Short Headline -->
+                    <div class="form-group full-width">
+                        <label><span class="label-icon"><i class="fas fa-newspaper"></i></span> Short Headline <span style="color:#7a9aae;font-weight:500;">(used in ticker/cards)</span></label>
+                        <input type="text" id="formHeadlineText" placeholder="Short one-line headline" maxlength="90">
+                    </div>
+
+                    <!-- Priority -->
+                    <div class="form-group">
+                        <label><span class="label-icon"><i class="fas fa-flag"></i></span> Priority</label>
+                        <select id="formPriority">
+                            <option value="low">🟢 Low</option>
+                            <option value="normal" selected>🔵 Normal</option>
+                            <option value="high">🔥 High</option>
+                            <option value="critical">🚨 Critical</option>
+                        </select>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="form-group">
+                        <label><span class="label-icon"><i class="fas fa-info-circle"></i></span> Save As</label>
+                        <select id="formSaveMode">
+                            <option value="publish">📢 Publish (auto scheduled/live/expired)</option>
+                            <option value="draft">📝 Draft (hidden from clients)</option>
+                        </select>
+                    </div>
+
+                    <!-- Message -->
+                    <div class="form-group full-width">
+                        <label><span class="label-icon"><i class="fas fa-align-left"></i></span> Full Description <span style="color:#e74c3c;">*</span></label>
+                        <textarea id="formMessage" placeholder="Write the full announcement details..." rows="4" required></textarea>
+                        <div class="char-count"><span id="descCount">0</span> characters</div>
+                    </div>
+
+                    <!-- Scheduling -->
+                    <div class="form-group">
+                        <label><span class="label-icon"><i class="fas fa-calendar-day"></i></span> Start Date <span style="color:#e74c3c;">*</span></label>
+                        <input type="date" id="formStartDate" required>
                     </div>
                     <div class="form-group">
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="annActive" checked />
-                            <label for="annActive">✅ Active <span style="font-weight:400;color:#7e8c8f;font-size:0.65rem;">(visible to clients)</span></label>
+                        <label><span class="label-icon"><i class="fas fa-clock"></i></span> Start Time <span style="color:#e74c3c;">*</span></label>
+                        <input type="time" id="formStartTime" required>
+                    </div>
+                    <div class="form-group">
+                        <label><span class="label-icon"><i class="fas fa-calendar-times"></i></span> End Date <span style="color:#e74c3c;">*</span></label>
+                        <input type="date" id="formEndDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label><span class="label-icon"><i class="fas fa-hourglass-end"></i></span> End Time <span style="color:#e74c3c;">*</span></label>
+                        <input type="time" id="formEndTime" required>
+                    </div>
+                    <div class="form-group full-width">
+                        <div class="checkbox-row">
+                            <button type="button" class="act-btn" id="publishNowBtn"><i class="fas fa-bolt"></i> Publish Now</button>
+                            <label><input type="checkbox" id="formExpireNever"> ♾ Never Expire</label>
+                            <label style="display:flex;align-items:center;gap:6px;">🔁 Recurring:
+                                <select id="formRecurrence" style="margin-left:4px;">
+                                    <option value="none">None</option>
+                                    <option value="daily">Daily</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="monthly">Monthly</option>
+                                </select>
+                            </label>
                         </div>
                     </div>
+
+                    <!-- Banner Color -->
+                    <div class="form-group">
+                        <label><span class="label-icon"><i class="fas fa-palette"></i></span> Accent / Banner Color</label>
+                        <div class="color-picker-row">
+                            <input type="color" id="formBannerColor" value="#00B4D8">
+                            <span class="color-hex" id="colorHexDisplay">#00B4D8</span>
+                        </div>
+                    </div>
+
+                    <!-- Flags -->
+                    <div class="form-group full-width">
+                        <label><span class="label-icon"><i class="fas fa-toggle-on"></i></span> Announcement Options</label>
+                        <div class="checkbox-row">
+                            <label><input type="checkbox" id="formActive" checked> ✅ Active</label>
+                            <label><input type="checkbox" id="formPinned"> 📌 Pinned</label>
+                        </div>
+                    </div>
+
+                    <!-- Display Locations -->
+                    <div class="form-group full-width">
+                        <label><span class="label-icon"><i class="fas fa-map-marker-alt"></i></span> Display Locations <span style="color:#7a9aae;font-weight:500;">(select one or more)</span></label>
+                        <div class="visibility-tags" id="locationTags">
+                            <span class="vis-tag active" data-value="ticker">📰 Breaking News Ticker</span>
+                            <span class="vis-tag" data-value="banner">🖼 Homepage Banner</span>
+                            <span class="vis-tag" data-value="popup">💬 Popup Modal</span>
+                            <span class="vis-tag" data-value="card">🗂 Notification Card</span>
+                            <span class="vis-tag" data-value="dashboard">📊 Dashboard Widget</span>
+                            <span class="vis-tag" data-value="portal_home">🏠 Customer Portal Home</span>
+                            <span class="vis-tag" data-value="login_notice">🔐 Login Page Notice</span>
+                        </div>
+                        <input type="hidden" id="formLocations" value="ticker">
+                    </div>
+
+                    <!-- Audience Targeting -->
+                    <div class="form-group full-width">
+                        <label><span class="label-icon"><i class="fas fa-users"></i></span> Audience Targeting</label>
+                        <div class="visibility-tags" id="visibilityTags">
+                            <span class="vis-tag active" data-value="all">🌐 All Customers</span>
+                            <span class="vis-tag" data-value="active">✅ Active Customers</span>
+                            <span class="vis-tag" data-value="suspended">⏸ Suspended Customers</span>
+                            <span class="vis-tag" data-value="expired">⛔ Expired Customers</span>
+                            <span class="vis-tag" data-value="selected_package">📦 Package-wise</span>
+                            <span class="vis-tag" data-value="selected_area">📍 Area-wise</span>
+                            <span class="vis-tag" data-value="selected_zone">🗺 Zone-wise</span>
+                            <span class="vis-tag" data-value="selected_customers">🎯 Selected Customers</span>
+                        </div>
+                        <input type="hidden" id="formVisibility" value="all">
+                        <input type="text" id="formAudienceValue" placeholder="Package name / Area / Zone / Comma-separated phone numbers (based on targeting above)" style="margin-top:8px;display:none;">
+                    </div>
+
+                    <!-- Rich Content -->
+                    <div class="form-group">
+                        <label><span class="label-icon"><i class="fas fa-image"></i></span> Image URL</label>
+                        <input type="text" id="formImageUrl" placeholder="https://... (optional)">
+                    </div>
+                    <div class="form-group">
+                        <label><span class="label-icon"><i class="fas fa-paperclip"></i></span> Attachment URL (PDF/Image)</label>
+                        <input type="text" id="formAttachmentUrl" placeholder="https://... (optional)">
+                    </div>
+                    <div class="form-group">
+                        <label><span class="label-icon"><i class="fas fa-external-link-alt"></i></span> Button Text</label>
+                        <input type="text" id="formButtonText" placeholder="e.g., Learn More">
+                    </div>
+                    <div class="form-group">
+                        <label><span class="label-icon"><i class="fas fa-link"></i></span> Button Link</label>
+                        <input type="text" id="formButtonLink" placeholder="https:// or tel: or wa.me link">
+                    </div>
+
+                    <!-- Hidden ID for edit -->
+                    <input type="hidden" id="formEditId" value="">
                 </div>
 
                 <div class="form-actions">
-                    <button class="btn-submit" id="submitBtn"><i class="fas fa-plus"></i> Add Announcement</button>
-                    <button class="btn-cancel" id="cancelBtn"><i class="fas fa-times"></i> Cancel</button>
-                    <button class="btn-delete" id="deleteBtn" style="display:none;"><i class="fas fa-trash"></i> Delete</button>
+                    <button type="button" class="btn-preview" id="previewBtn"><i class="fas fa-eye"></i> Live Preview</button>
+                    <button type="submit" class="btn-submit" id="formSubmitBtn"><i class="fas fa-save"></i> Publish</button>
+                    <button type="button" class="btn-cancel" id="formCancelBtn">Cancel</button>
                 </div>
-
-                <div class="form-feedback" id="formFeedback"></div>
-            </div>
-
-            <!-- ─── LIST ─── -->
-            <div class="list-section">
-                <div class="list-header">
-                    <div class="list-title"><i class="fas fa-list"></i> All Announcements</div>
-                    <span class="list-count" id="listCount">0 items</span>
-                </div>
-
-                <div class="list-filters" id="filterContainer">
-                    <button class="filter-btn active" data-filter="all">📢 All <span class="badge-count" id="filterAllCount">0</span></button>
-                    <button class="filter-btn" data-filter="maintenance">🔧 Maintenance <span class="badge-count" id="filterMaintenanceCount">0</span></button>
-                    <button class="filter-btn" data-filter="new_packages">📦 New Pkgs <span class="badge-count" id="filterNewPackagesCount">0</span></button>
-                    <button class="filter-btn" data-filter="offers_discounts">🏷️ Offers <span class="badge-count" id="filterOffersCount">0</span></button>
-                    <button class="filter-btn" data-filter="outage_alert">⚠️ Outage <span class="badge-count" id="filterOutageCount">0</span></button>
-                    <button class="filter-btn" data-filter="general_news">📰 News <span class="badge-count" id="filterGeneralCount">0</span></button>
-                </div>
-
-                <div class="list-items" id="listContainer">
-                    <div class="list-empty">
-                        <i class="fas fa-inbox"></i>
-                        No announcements yet. Create your first one above!
-                    </div>
-                </div>
-            </div>
-
+            </form>
         </div>
-
-        <!-- ─── FOOTER ─── -->
-        <div class="admin-footer">
-            <div class="footer-brand">👑 <span>D3 Crown Fiber</span> — Announcement Admin</div>
-            <div class="footer-dev">🚀 Developed by <span class="dev-name">Khalid Ali Pechuho</span></div>
-            <a href="#" class="back-link" onclick="window.location.href='Shahid_Portal.html';">← Back to Client Portal</a>
-        </div>
-
     </div>
 
+    <!-- ─── PREVIEW MODAL ─── -->
+    <div class="preview-overlay" id="previewModal">
+        <div class="preview-box">
+            <div class="preview-header">
+                <h3><i class="fas fa-eye" style="color:#00B4D8;"></i> Live Preview</h3>
+                <button class="preview-close" id="previewCloseBtn">✕</button>
+            </div>
+            <div class="preview-content" id="previewContent">
+                <span class="preview-icon" id="previewIcon">📢</span>
+                <div class="preview-title" id="previewTitle">Announcement Title</div>
+                <div class="preview-category" id="previewCategory">General News</div>
+                <div class="preview-body" id="previewBody">Detailed description goes here...</div>
+                <div class="preview-meta">
+                    <span><i class="fas fa-calendar-alt"></i> <span id="previewStart">Start: —</span></span>
+                    <span><i class="fas fa-hourglass-end"></i> <span id="previewEnd">End: —</span></span>
+                    <span><i class="fas fa-flag"></i> <span id="previewPriority">Normal</span></span>
+                    <span><i class="fas fa-eye"></i> <span id="previewVisibility">All Clients</span></span>
+                    <span><i class="fas fa-toggle-on"></i> <span id="previewActive">Active</span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── TICKER SETTINGS MODAL ─── -->
+    <div class="side-modal-overlay" id="tickerSettingsModal">
+        <div class="side-modal-box">
+            <span class="close-x" id="tickerSettingsCloseBtn">✕</span>
+            <h3><i class="fas fa-sliders-h" style="color:#00B4D8;"></i> Breaking News Ticker Settings</h3>
+            <div class="ticker-settings-grid">
+                <div>
+                    <label>Ticker Background Color</label>
+                    <input type="color" id="tsBgColor" value="#0a1a2a">
+                </div>
+                <div>
+                    <label>Label Background Color</label>
+                    <input type="color" id="tsLabelBg" value="#e63946">
+                </div>
+                <div>
+                    <label>Text Color</label>
+                    <input type="color" id="tsTextColor" value="#ffffff">
+                </div>
+                <div>
+                    <label>Font Size (px)</label>
+                    <input type="number" id="tsFontSize" value="13" min="10" max="24">
+                </div>
+                <div>
+                    <label>Scrolling Speed (seconds)</label>
+                    <input type="number" id="tsSpeed" value="25" min="5" max="120">
+                </div>
+                <div>
+                    <label>Border Radius (px)</label>
+                    <input type="number" id="tsRadius" value="0" min="0" max="30">
+                </div>
+                <div>
+                    <label>Animation</label>
+                    <select id="tsAnimation"><option value="on">On</option><option value="off">Off</option></select>
+                </div>
+                <div>
+                    <label>"Breaking News" Label</label>
+                    <select id="tsLabelOn"><option value="on">On</option><option value="off">Off</option></select>
+                </div>
+            </div>
+            <div id="tsPreviewWrap" style="margin-bottom:16px;border-radius:8px;overflow:hidden;">
+                <div id="tsPreviewLabel" style="display:inline-block;padding:4px 12px;font-weight:800;font-size:0.7rem;">🔴 BREAKING NEWS</div>
+                <div id="tsPreviewBar" style="padding:8px 12px;font-weight:700;white-space:nowrap;overflow:hidden;">📢 This is a live preview of your Breaking News Ticker styling...</div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn-submit" id="tsSaveBtn"><i class="fas fa-save"></i> Save & Apply Live</button>
+                <button type="button" class="btn-cancel" id="tsCancelBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── RECYCLE BIN MODAL ─── -->
+    <div class="side-modal-overlay" id="recycleBinModal">
+        <div class="side-modal-box">
+            <span class="close-x" id="recycleBinCloseBtn">✕</span>
+            <h3><i class="fas fa-trash-restore" style="color:#00B4D8;"></i> Recycle Bin</h3>
+            <div id="recycleBinList">
+                <p style="font-size:0.7rem;color:#7a9aae;">Loading...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── ACTIVITY LOG MODAL ─── -->
+    <div class="side-modal-overlay" id="activityLogModal">
+        <div class="side-modal-box">
+            <span class="close-x" id="activityLogCloseBtn">✕</span>
+            <h3><i class="fas fa-history" style="color:#00B4D8;"></i> Activity Log</h3>
+            <div id="activityLogList">
+                <p style="font-size:0.7rem;color:#7a9aae;">Loading...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── FIREBASE CONFIG ─── -->
     <script>
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // FIREBASE CONFIG
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const firebaseConfig = {
             apiKey: "AIzaSyDZHUNdkun0f3cY3JqfzrI86mpxy7zY7x0",
             authDomain: "d3crown-805ce.firebaseapp.com",
@@ -849,436 +1923,1398 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        const auth = firebase.auth();
 
         const ADMIN_UID = "0rulvawKt1d6M3FlxfEariNOukk1";
-        const ANNOUNCEMENTS_PATH = "d3_announcements";
-        const COMPLAINTS_PATH = "d3_complaints";
-        const CLIENTS_PATH = "d3_clients";
+        const ANNOUNCEMENTS_PATH = "d3_announcements_v2";
+        const ADMIN_PATH = "d3_admin";
+        const TICKER_SETTINGS_PATH = `${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/tickerSettings`;
+        const ACTIVITY_LOG_PATH = `${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/activityLog`;
 
-        let announcementsCache = [];
-        let editingId = null;
-        let currentFilter = 'all';
-        let isSubmitting = false;
+        // ─── 18 ANNOUNCEMENT CATEGORIES (icon + color theme each) ───
+        const CATEGORY_META = {
+            'Breaking News':          { icon: '📢', color: '#E63946' },
+            'Internet Outage':        { icon: '🌐', color: '#D62828' },
+            'Maintenance Notice':     { icon: '🛠', color: '#F4A261' },
+            'Planned Maintenance':    { icon: '🗓', color: '#E9C46A' },
+            'Emergency Alert':        { icon: '🚨', color: '#FF0000' },
+            'Package Update':         { icon: '📦', color: '#2A9D8F' },
+            'Price Change':           { icon: '💰', color: '#F77F00' },
+            'New Package Launch':     { icon: '🚀', color: '#06D6A0' },
+            'Service Upgrade':        { icon: '⚡', color: '#118AB2' },
+            'New Coverage Area':      { icon: '📍', color: '#073B4C' },
+            'Promotional Offer':      { icon: '🎉', color: '#FF6B6B' },
+            'Discount Offer':         { icon: '💎', color: '#9D4EDD' },
+            'Holiday Notice':         { icon: '🎊', color: '#FFB703' },
+            'Payment Reminder':       { icon: '💳', color: '#FB8500' },
+            'Billing Notice':         { icon: '🧾', color: '#8338EC' },
+            'General Announcement':   { icon: '📣', color: '#00B4D8' },
+            'Security Notice':        { icon: '🔒', color: '#3A0CA3' },
+            'Customer Information':   { icon: 'ℹ️', color: '#4361EE' }
+        };
 
-        // ─── DOM refs ───
+        // ─── STATE ───
+        let allAnnouncements = [];
+        let isEditing = false;
+        let selectedVisibility = ['all'];
+        let selectedLocations = ['ticker'];
+        let countdownIntervals = {};
+        let searchQuery = '';
+        let statusFilterVal = 'all';
+        let categoryFilterVal = 'all';
+        let activeFilterVal = 'all';
+        let sortVal = 'priority';
+        let selectedIds = new Set();
+        let currentAdminEmailStr = '';
+
+        // ─── DOM REFS ───
+        const splash = document.getElementById('splashScreen');
+        const loginScreen = document.getElementById('loginScreen');
+        const adminPanel = document.getElementById('adminPanel');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginError = document.getElementById('loginError');
+        const loginLoader = document.getElementById('loginLoader');
+        const adminEmail = document.getElementById('adminEmail');
+        const adminPassword = document.getElementById('adminPassword');
+        const logoutBtn = document.getElementById('logoutAdminBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
+
+        const announcementsGrid = document.getElementById('announcementsGrid');
+        const emptyState = document.getElementById('emptyState');
+        const statusFilter = document.getElementById('statusFilter');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const priorityFilter = document.getElementById('priorityFilter');
+        const activeFilter = document.getElementById('activeFilter');
+        const searchInput = document.getElementById('searchInput');
+        const sortSelect = document.getElementById('sortSelect');
+
+        const modal = document.getElementById('announceModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+        const form = document.getElementById('announceForm');
+        const formEditId = document.getElementById('formEditId');
+        const formEmoji = document.getElementById('formEmoji');
         const formTitle = document.getElementById('formTitle');
-        const annCategory = document.getElementById('annCategory');
-        const annTitle = document.getElementById('annTitle');
-        const annMessage = document.getElementById('annMessage');
-        const annUrgent = document.getElementById('annUrgent');
-        const annActive = document.getElementById('annActive');
-        const submitBtn = document.getElementById('submitBtn');
-        const cancelBtn = document.getElementById('cancelBtn');
-        const deleteBtn = document.getElementById('deleteBtn');
-        const formFeedback = document.getElementById('formFeedback');
-        const listContainer = document.getElementById('listContainer');
-        const tickerPreviewTrack = document.getElementById('tickerPreviewTrack');
-        const connectionStatus = document.getElementById('connectionStatus');
+        const formMessage = document.getElementById('formMessage');
+        const formCategory = document.getElementById('formCategory');
+        const categoryGrid = document.getElementById('categoryGrid');
+        const formHeadlineText = document.getElementById('formHeadlineText');
+        const formPriority = document.getElementById('formPriority');
+        const formSaveMode = document.getElementById('formSaveMode');
+        const formBannerColor = document.getElementById('formBannerColor');
+        const colorHexDisplay = document.getElementById('colorHexDisplay');
+        const formStartDate = document.getElementById('formStartDate');
+        const formStartTime = document.getElementById('formStartTime');
+        const formEndDate = document.getElementById('formEndDate');
+        const formEndTime = document.getElementById('formEndTime');
+        const formExpireNever = document.getElementById('formExpireNever');
+        const formRecurrence = document.getElementById('formRecurrence');
+        const publishNowBtn = document.getElementById('publishNowBtn');
+        const formActive = document.getElementById('formActive');
+        const formPinned = document.getElementById('formPinned');
+        const formVisibility = document.getElementById('formVisibility');
+        const formAudienceValue = document.getElementById('formAudienceValue');
+        const visibilityTags = document.getElementById('visibilityTags');
+        const locationTags = document.getElementById('locationTags');
+        const formLocations = document.getElementById('formLocations');
+        const formImageUrl = document.getElementById('formImageUrl');
+        const formAttachmentUrl = document.getElementById('formAttachmentUrl');
+        const formButtonText = document.getElementById('formButtonText');
+        const formButtonLink = document.getElementById('formButtonLink');
+        const formSubmitBtn = document.getElementById('formSubmitBtn');
+        const formCancelBtn = document.getElementById('formCancelBtn');
+        const previewBtn = document.getElementById('previewBtn');
+        const previewModal = document.getElementById('previewModal');
+        const previewCloseBtn = document.getElementById('previewCloseBtn');
+        const previewIcon = document.getElementById('previewIcon');
+        const previewTitle = document.getElementById('previewTitle');
+        const previewCategory = document.getElementById('previewCategory');
+        const previewBody = document.getElementById('previewBody');
+        const previewStart = document.getElementById('previewStart');
+        const previewEnd = document.getElementById('previewEnd');
+        const previewPriority = document.getElementById('previewPriority');
+        const previewVisibility = document.getElementById('previewVisibility');
+        const previewActive = document.getElementById('previewActive');
+        const titleCount = document.getElementById('titleCount');
+        const descCount = document.getElementById('descCount');
 
+        const toastContainer = document.getElementById('toastContainer');
+
+        // ─── STATS REFS ───
         const statTotal = document.getElementById('statTotal');
+        const statLive = document.getElementById('statLive');
+        const statScheduled = document.getElementById('statScheduled');
+        const statDrafts = document.getElementById('statDrafts');
+        const statExpired = document.getElementById('statExpired');
+        const statLastPublished = document.getElementById('statLastPublished');
+        const statTickerActive = document.getElementById('statTickerActive');
         const statActive = document.getElementById('statActive');
-        const statUrgent = document.getElementById('statUrgent');
-        const statInactive = document.getElementById('statInactive');
-        const listCount = document.getElementById('listCount');
 
-        // ─── ────────────────────────────────────────────
-        // ★ HELPERS
-        // ─── ────────────────────────────────────────────
-
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
+        // ─── ACTIVITY LOG ───
+        async function logActivity(action, target) {
+            try {
+                const entry = { action, target: target || '', by: currentAdminEmailStr || 'admin', at: new Date().toISOString() };
+                await db.ref(ACTIVITY_LOG_PATH).push(entry);
+            } catch (_) { /* non-critical */ }
         }
 
-        function formatDMY(isoStr) {
+        // ─── CATEGORY GRID RENDER ───
+        function renderCategoryGrid(selected) {
+            let html = '';
+            Object.keys(CATEGORY_META).forEach(cat => {
+                const meta = CATEGORY_META[cat];
+                const isActive = selected === cat;
+                html += `<div class="cat-chip ${isActive ? 'active' : ''}" data-cat="${cat}" style="--cat-bg:${meta.color}1a;--cat-color:${meta.color};">
+                    <span class="cat-check"></span><span>${meta.icon}</span><span>${cat}</span>
+                </div>`;
+            });
+            categoryGrid.innerHTML = html;
+            categoryGrid.querySelectorAll('.cat-chip').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    categoryGrid.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    formCategory.value = chip.dataset.cat;
+                    formEmoji.value = CATEGORY_META[chip.dataset.cat].icon;
+                    formBannerColor.value = CATEGORY_META[chip.dataset.cat].color;
+                    colorHexDisplay.textContent = CATEGORY_META[chip.dataset.cat].color;
+                    updatePreview();
+                });
+            });
+        }
+        renderCategoryGrid(null);
+
+        // ─── POPULATE CATEGORY FILTER ───
+        (function populateCategoryFilter() {
+            Object.keys(CATEGORY_META).forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = `${CATEGORY_META[cat].icon} ${cat}`;
+                categoryFilter.appendChild(opt);
+            });
+        })();
+
+        // ─── SPLASH ───
+        setTimeout(() => {
+            splash.classList.add('hidden');
+            setTimeout(() => { splash.style.display = 'none'; }, 800);
+        }, 2000);
+
+        // ─── TOAST ───
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const t = document.createElement('div');
+            t.className = `toast ${type}`;
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+            t.innerHTML = `<span class="toast-icon">${icon}</span> ${msg}`;
+            container.appendChild(t);
+            setTimeout(() => {
+                t.style.opacity = '0';
+                t.style.transform = 'translateX(30px)';
+                setTimeout(() => t.remove(), 400);
+            }, 4000);
+        }
+
+        // ─── HELPERS ───
+        function formatDate(isoStr) {
             if (!isoStr) return 'N/A';
             const d = new Date(isoStr);
             if (isNaN(d.getTime())) return isoStr;
             return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
         }
 
-        function getCategoryLabel(cat) {
+        function formatDateTime(isoStr) {
+            if (!isoStr) return 'N/A';
+            const d = new Date(isoStr);
+            if (isNaN(d.getTime())) return isoStr;
+            const datePart = formatDate(isoStr);
+            let h = d.getHours(),
+                ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12 || 12;
+            const m = String(d.getMinutes()).padStart(2, '0');
+            return `${datePart} ${h}:${m} ${ampm}`;
+        }
+
+        function getStatus(ann) {
+            if (ann.status === 'draft') return 'draft';
+            if (ann.status === 'deleted') return 'deleted';
+            if (ann.status === 'archived') return 'archived';
+
+            const now = new Date().getTime();
+            const start = new Date(ann.startDateTime).getTime();
+            const end = new Date(ann.endDateTime).getTime();
+
+            if (now < start) return 'scheduled';
+
+            if (now >= start && now <= end) {
+                const diff = end - now;
+                const hoursLeft = diff / (1000 * 60 * 60);
+                if (hoursLeft < 24) return 'expiring';
+                return 'live';
+            }
+
+            if (now > end) return 'expired';
+            return 'scheduled';
+        }
+
+        function getStatusLabel(status) {
             const map = {
-                'maintenance': '🔧 Maintenance',
-                'new_packages': '📦 New Packages',
-                'offers_discounts': '🏷️ Offers / Discounts',
-                'outage_alert': '⚠️ Outage Alert',
-                'general_news': '📰 General News'
+                'draft': '📝 Draft',
+                'live': '🟢 Published',
+                'scheduled': '🔵 Scheduled',
+                'expiring': '🟠 Expiring Soon',
+                'expired': '🔴 Expired',
+                'archived': '⚪ Archived',
+                'deleted': '🗑 Deleted'
             };
-            return map[cat] || '📰 General News';
+            return map[status] || status;
         }
 
-        function getCategoryClass(cat) {
-            return cat || 'general_news';
-        }
-
-        function getCategoryEmoji(cat) {
+        function getStatusClass(status) {
             const map = {
-                'maintenance': '🔧',
-                'new_packages': '📦',
-                'offers_discounts': '🏷️',
-                'outage_alert': '⚠️',
-                'general_news': '📰'
+                'draft': 'scheduled',
+                'live': 'live',
+                'scheduled': 'scheduled',
+                'expiring': 'expiring',
+                'expired': 'expired',
+                'archived': 'archived',
+                'deleted': 'archived'
             };
-            return map[cat] || '📰';
+            return map[status] || '';
         }
 
-        // ─── ────────────────────────────────────────────
-        // ★ FIREBASE REF
-        // ─── ────────────────────────────────────────────
-
-        function getAnnouncementsRef() {
-            return db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements`);
+        // Priority order: Critical(0) > High(1) > Normal(2) > Low(3)
+        function getPriorityRank(priority) {
+            const map = { 'critical': 0, 'high': 1, 'normal': 2, 'low': 3 };
+            return map[priority] !== undefined ? map[priority] : 2;
         }
 
-        // ─── ────────────────────────────────────────────
-        // ★ LISTEN & RENDER
-        // ─── ────────────────────────────────────────────
+        function getPriorityLabel(priority) {
+            const map = { 'low': '🟢 Low', 'normal': '🔵 Normal', 'high': '🔥 High', 'critical': '🚨 Critical' };
+            return map[priority] || '🔵 Normal';
+        }
 
-        function listenAnnouncements() {
-            const ref = getAnnouncementsRef();
-            ref.on('value', (snap) => {
+        function getPriorityColor(priority) {
+            const map = { 'low': '#2a9d8f', 'normal': '#7a9aae', 'high': '#f5a623', 'critical': '#e63946' };
+            return map[priority] || '#7a9aae';
+        }
+
+        function generateId() {
+            return 'ann_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 6);
+        }
+
+        function getStartDateTime() {
+            const date = formStartDate.value;
+            const time = formStartTime.value;
+            if (!date || !time) return null;
+            return new Date(`${date}T${time}`).toISOString();
+        }
+
+        function getEndDateTime() {
+            if (formExpireNever.checked) {
+                const far = new Date();
+                far.setFullYear(far.getFullYear() + 50);
+                return far.toISOString();
+            }
+            const date = formEndDate.value;
+            const time = formEndTime.value;
+            if (!date || !time) return null;
+            return new Date(`${date}T${time}`).toISOString();
+        }
+
+        // ─── GENERIC TAG-GROUP HELPER (scoped per container: audience vs display-locations) ───
+        function getSelectedTags(container) {
+            const active = container.querySelectorAll('.vis-tag.active');
+            return Array.from(active).map(el => el.dataset.value);
+        }
+        function wireTagGroup(container, hiddenInput, defaultValue, onChange) {
+            container.addEventListener('click', (e) => {
+                const tag = e.target.closest('.vis-tag');
+                if (!tag || !container.contains(tag)) return;
+                const val = tag.dataset.value;
+                if (val === defaultValue) {
+                    container.querySelectorAll('.vis-tag').forEach(t => t.classList.remove('active'));
+                    tag.classList.add('active');
+                } else {
+                    const allTag = container.querySelector(`.vis-tag[data-value="${defaultValue}"]`);
+                    if (allTag) allTag.classList.remove('active');
+                    tag.classList.toggle('active');
+                    const active = container.querySelectorAll('.vis-tag.active');
+                    if (active.length === 0 && allTag) allTag.classList.add('active');
+                }
+                hiddenInput.value = getSelectedTags(container).join(',');
+                if (onChange) onChange();
+                setTimeout(updatePreview, 30);
+            });
+        }
+        function getSelectedVisibility() { return getSelectedTags(visibilityTags); }
+        function getSelectedLocations() { return getSelectedTags(locationTags); }
+
+        wireTagGroup(visibilityTags, formVisibility, 'all', () => {
+            const sel = getSelectedVisibility();
+            const needsValue = sel.some(v => v.startsWith('selected_'));
+            formAudienceValue.style.display = needsValue ? 'block' : 'none';
+        });
+        wireTagGroup(locationTags, formLocations, null, null);
+
+        // ─── SCHEDULING HELPERS ───
+        publishNowBtn.addEventListener('click', () => {
+            const now = new Date();
+            formStartDate.value = now.toISOString().slice(0, 10);
+            formStartTime.value = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            updatePreview();
+        });
+        formExpireNever.addEventListener('change', () => {
+            formEndDate.disabled = formExpireNever.checked;
+            formEndTime.disabled = formExpireNever.checked;
+            updatePreview();
+        });
+
+        // ─── COLOR PICKER ───
+        formBannerColor.addEventListener('input', () => {
+            colorHexDisplay.textContent = formBannerColor.value;
+        });
+
+        // ─── CHAR COUNTERS ───
+        formTitle.addEventListener('input', () => {
+            titleCount.textContent = formTitle.value.length;
+            if (formTitle.value.length > 120) formTitle.value = formTitle.value.slice(0, 120);
+        });
+        formMessage.addEventListener('input', () => {
+            descCount.textContent = formMessage.value.length;
+        });
+
+        // ─── PREVIEW ───
+        function updatePreview() {
+            const emoji = formEmoji.value || '📢';
+            const title = formTitle.value || 'Announcement Title';
+            const category = formCategory.value || 'General Announcement';
+            const body = formMessage.value || 'Detailed description goes here...';
+            const start = formStartDate.value && formStartTime.value ?
+                formatDateTime(new Date(`${formStartDate.value}T${formStartTime.value}`).toISOString()) :
+                '—';
+            const end = formExpireNever.checked ? 'Never' : (formEndDate.value && formEndTime.value ?
+                formatDateTime(new Date(`${formEndDate.value}T${formEndTime.value}`).toISOString()) :
+                '—');
+            const priority = getPriorityLabel(formPriority.value);
+            const vis = getSelectedVisibility();
+            const visLabelMap = { 'all': '🌐 All Customers', 'active': '✅ Active Customers', 'suspended': '⏸ Suspended',
+                'expired': '⛔ Expired Customers', 'selected_package': '📦 Package-wise', 'selected_area': '📍 Area-wise',
+                'selected_zone': '🗺 Zone-wise', 'selected_customers': '🎯 Selected Customers' };
+            const visLabel = vis.map(v => visLabelMap[v] || v).join(', ');
+            const activeLabel = formActive.checked ? '✅ Active' : '⛔ Inactive';
+
+            previewIcon.textContent = emoji;
+            previewTitle.textContent = title;
+            previewCategory.textContent = category;
+            previewBody.textContent = body;
+            previewStart.textContent = `Start: ${start}`;
+            previewEnd.textContent = `End: ${end}`;
+            previewPriority.textContent = priority;
+            previewPriority.style.color = getPriorityColor(formPriority.value);
+            previewVisibility.textContent = visLabel || '🌐 All Customers';
+            previewActive.textContent = activeLabel;
+            previewActive.style.color = formActive.checked ? '#00a86b' : '#e74c3c';
+        }
+
+        formEmoji.addEventListener('input', updatePreview);
+        formTitle.addEventListener('input', updatePreview);
+        formMessage.addEventListener('input', updatePreview);
+        formPriority.addEventListener('change', updatePreview);
+        formStartDate.addEventListener('change', updatePreview);
+        formStartTime.addEventListener('change', updatePreview);
+        formEndDate.addEventListener('change', updatePreview);
+        formEndTime.addEventListener('change', updatePreview);
+        formActive.addEventListener('change', updatePreview);
+
+        previewBtn.addEventListener('click', () => {
+            updatePreview();
+            previewModal.classList.add('active');
+        });
+
+        previewCloseBtn.addEventListener('click', () => previewModal.classList.remove('active'));
+        previewModal.addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) previewModal.classList.remove('active');
+        });
+
+        // ─── MODAL CONTROLS ───
+        function openModal(ann = null) {
+            modal.classList.add('active');
+            formEndDate.disabled = false;
+            formEndTime.disabled = false;
+            if (ann) {
+                isEditing = true;
+                modalTitle.textContent = '✏️ Edit Announcement';
+                formSubmitBtn.innerHTML = '<i class="fas fa-save"></i> Update';
+                formEditId.value = ann.id || '';
+                formEmoji.value = ann.emoji || '📢';
+                formTitle.value = ann.title || '';
+                formHeadlineText.value = ann.shortHeadline || '';
+                formMessage.value = ann.message || '';
+                formCategory.value = ann.category || 'General Announcement';
+                renderCategoryGrid(formCategory.value);
+                formPriority.value = ann.priority || 'normal';
+                formSaveMode.value = ann.status === 'draft' ? 'draft' : 'publish';
+                formBannerColor.value = ann.bannerColor || (CATEGORY_META[ann.category] ? CATEGORY_META[ann.category].color : '#00B4D8');
+                colorHexDisplay.textContent = formBannerColor.value;
+                formActive.checked = ann.active !== undefined ? ann.active : true;
+                formPinned.checked = ann.pinned || false;
+                formImageUrl.value = ann.imageUrl || '';
+                formAttachmentUrl.value = ann.attachmentUrl || '';
+                formButtonText.value = ann.buttonText || '';
+                formButtonLink.value = ann.buttonLink || '';
+                formRecurrence.value = ann.recurrence || 'none';
+                titleCount.textContent = String(formTitle.value.length);
+                descCount.textContent = String(formMessage.value.length);
+
+                if (ann.startDateTime) {
+                    const d = new Date(ann.startDateTime);
+                    formStartDate.value = d.toISOString().slice(0, 10);
+                    formStartTime.value = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2,
+                    '0');
+                } else {
+                    formStartDate.value = '';
+                    formStartTime.value = '';
+                }
+                const isNeverExpire = ann.endDateTime && (new Date(ann.endDateTime).getFullYear() - new Date().getFullYear() >= 40);
+                formExpireNever.checked = !!isNeverExpire;
+                formEndDate.disabled = !!isNeverExpire;
+                formEndTime.disabled = !!isNeverExpire;
+                if (ann.endDateTime && !isNeverExpire) {
+                    const d = new Date(ann.endDateTime);
+                    formEndDate.value = d.toISOString().slice(0, 10);
+                    formEndTime.value = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2,
+                    '0');
+                } else if (!isNeverExpire) {
+                    formEndDate.value = '';
+                    formEndTime.value = '';
+                }
+
+                // Audience targeting tags
+                const vis = ann.visibility || ['all'];
+                visibilityTags.querySelectorAll('.vis-tag').forEach(t => t.classList.remove('active'));
+                vis.forEach(v => {
+                    const tag = visibilityTags.querySelector(`.vis-tag[data-value="${v}"]`);
+                    if (tag) tag.classList.add('active');
+                });
+                if (vis.length === 0) {
+                    const allTag = visibilityTags.querySelector('.vis-tag[data-value="all"]');
+                    if (allTag) allTag.classList.add('active');
+                }
+                formVisibility.value = vis.join(',');
+                formAudienceValue.value = ann.audienceValue || '';
+                formAudienceValue.style.display = vis.some(v => v.startsWith('selected_')) ? 'block' : 'none';
+
+                // Display locations tags
+                const locs = ann.displayLocations || ['ticker'];
+                locationTags.querySelectorAll('.vis-tag').forEach(t => t.classList.remove('active'));
+                locs.forEach(v => {
+                    const tag = locationTags.querySelector(`.vis-tag[data-value="${v}"]`);
+                    if (tag) tag.classList.add('active');
+                });
+                formLocations.value = locs.join(',');
+
+                updatePreview();
+            } else {
+                isEditing = false;
+                modalTitle.textContent = '📢 Create Announcement';
+                formSubmitBtn.innerHTML = '<i class="fas fa-save"></i> Publish';
+                formEditId.value = '';
+                form.reset();
+                formEmoji.value = '📢';
+                formCategory.value = '';
+                renderCategoryGrid(null);
+                formBannerColor.value = '#00B4D8';
+                colorHexDisplay.textContent = '#00B4D8';
+                formActive.checked = true;
+                formPinned.checked = false;
+                formExpireNever.checked = false;
+                formRecurrence.value = 'none';
+                formSaveMode.value = 'publish';
+                formImageUrl.value = '';
+                formAttachmentUrl.value = '';
+                formButtonText.value = '';
+                formButtonLink.value = '';
+                formAudienceValue.value = '';
+                formAudienceValue.style.display = 'none';
+
+                formVisibility.value = 'all';
+                visibilityTags.querySelectorAll('.vis-tag').forEach(t => t.classList.remove('active'));
+                const allTag = visibilityTags.querySelector('.vis-tag[data-value="all"]');
+                if (allTag) allTag.classList.add('active');
+
+                formLocations.value = 'ticker';
+                locationTags.querySelectorAll('.vis-tag').forEach(t => t.classList.remove('active'));
+                const tickerTag = locationTags.querySelector('.vis-tag[data-value="ticker"]');
+                if (tickerTag) tickerTag.classList.add('active');
+
+                titleCount.textContent = '0';
+                descCount.textContent = '0';
+                const now = new Date();
+                const tomorrow = new Date(now);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const nextWeek = new Date(now);
+                nextWeek.setDate(nextWeek.getDate() + 7);
+                formStartDate.value = tomorrow.toISOString().slice(0, 10);
+                formStartTime.value = '08:00';
+                formEndDate.value = nextWeek.toISOString().slice(0, 10);
+                formEndTime.value = '22:00';
+                updatePreview();
+            }
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+            formEditId.value = '';
+            isEditing = false;
+        }
+
+        modalCloseBtn.addEventListener('click', closeModal);
+        formCancelBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeModal();
+        });
+
+        document.getElementById('createAnnounceBtn').addEventListener('click', () => openModal(null));
+
+        // ─── FORM SUBMIT ───
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const emoji = formEmoji.value.trim() || '📢';
+            const title = formTitle.value.trim();
+            const shortHeadline = formHeadlineText.value.trim();
+            const message = formMessage.value.trim();
+            const category = formCategory.value;
+            const priority = formPriority.value;
+            const saveMode = formSaveMode.value;
+            const bannerColor = formBannerColor.value;
+            const startDateTime = getStartDateTime();
+            const endDateTime = getEndDateTime();
+            const active = formActive.checked;
+            const pinned = formPinned.checked;
+            const visibility = getSelectedVisibility();
+            const audienceValue = formAudienceValue.value.trim();
+            const displayLocations = getSelectedLocations();
+            const imageUrl = formImageUrl.value.trim();
+            const attachmentUrl = formAttachmentUrl.value.trim();
+            const buttonText = formButtonText.value.trim();
+            const buttonLink = formButtonLink.value.trim();
+            const recurrence = formRecurrence.value;
+            const editId = formEditId.value;
+
+            if (!category) { showToast('Please select a category.', 'error'); return; }
+            if (!title) { showToast('Please enter a title.', 'error'); return; }
+            if (!message) { showToast('Please enter a full description.', 'error'); return; }
+            if (!startDateTime) { showToast('Please select a start date and time.', 'error'); return; }
+            if (!endDateTime) { showToast('Please select an end date and time.', 'error'); return; }
+            if (displayLocations.length === 0) { showToast('Please select at least one display location.', 'error'); return; }
+
+            const startTs = new Date(startDateTime).getTime();
+            const endTs = new Date(endDateTime).getTime();
+            if (endTs <= startTs) {
+                showToast('End date/time must be after start date/time.', 'error');
+                return;
+            }
+            if (saveMode === 'publish' && endTs <= Date.now() && !formExpireNever.checked) {
+                showToast('End date/time must be in the future.', 'error');
+                return;
+            }
+
+            formSubmitBtn.disabled = true;
+            formSubmitBtn.textContent = '⏳ Saving...';
+
+            try {
+                const now = new Date().toISOString();
+                const editorEmail = currentAdminEmailStr || 'admin';
+                const data = {
+                    emoji,
+                    title,
+                    shortHeadline,
+                    message,
+                    category,
+                    priority,
+                    bannerColor,
+                    startDateTime,
+                    endDateTime,
+                    active,
+                    pinned,
+                    visibility,
+                    audienceValue,
+                    displayLocations,
+                    imageUrl,
+                    attachmentUrl,
+                    buttonText,
+                    buttonLink,
+                    recurrence,
+                    lastEditedBy: editorEmail,
+                    updatedAt: now,
+                    status: saveMode === 'draft' ? 'draft' : getStatus({ startDateTime, endDateTime, status: 'scheduled' })
+                };
+
+                let ref;
+                if (editId) {
+                    ref = db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements/${editId}`);
+                    await ref.update(data);
+                    logActivity('edit', title);
+                    showToast('✅ Announcement updated successfully!', 'success');
+                } else {
+                    const id = generateId();
+                    data.id = id;
+                    data.createdAt = now;
+                    data.createdBy = editorEmail;
+                    ref = db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements/${id}`);
+                    await ref.set(data);
+                    logActivity(saveMode === 'draft' ? 'save_draft' : 'publish', title);
+                    showToast(saveMode === 'draft' ? '📝 Saved as draft.' : '✅ Announcement published successfully!', 'success');
+                }
+
+                closeModal();
+                await loadAnnouncements();
+            } catch (err) {
+                console.error(err);
+                showToast('❌ Failed to save announcement: ' + err.message, 'error');
+            } finally {
+                formSubmitBtn.disabled = false;
+                formSubmitBtn.innerHTML = isEditing ? '<i class="fas fa-save"></i> Update' :
+                    '<i class="fas fa-save"></i> Publish';
+            }
+        });
+
+        // ─── LOAD ANNOUNCEMENTS ───
+        async function loadAnnouncements() {
+            try {
+                const snap = await db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements`).once('value');
                 const data = snap.val();
                 if (!data) {
-                    announcementsCache = [];
-                    renderAll();
-                    return;
+                    allAnnouncements = [];
+                } else {
+                    allAnnouncements = Object.values(data).filter(a => a && a.id);
                 }
-                const arr = Object.values(data);
-                // sort newest first
-                arr.sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
-                announcementsCache = arr;
-                renderAll();
-                updateConnectionStatus(true);
-            }, (err) => {
-                console.error('Firebase listen error:', err);
-                updateConnectionStatus(false);
-            });
-        }
-
-        function renderAll() {
-            renderStats();
-            renderTickerPreview();
-            renderList();
-            updateFilterCounts();
-        }
-
-        function renderStats() {
-            const total = announcementsCache.length;
-            const active = announcementsCache.filter(a => a.isActive !== false).length;
-            const urgent = announcementsCache.filter(a => a.isActive !== false && a.isUrgent === true).length;
-            const inactive = announcementsCache.filter(a => a.isActive === false).length;
-            statTotal.textContent = total;
-            statActive.textContent = active;
-            statUrgent.textContent = urgent;
-            statInactive.textContent = inactive;
-            listCount.textContent = total + ' items';
-        }
-
-        function renderTickerPreview() {
-            const active = announcementsCache.filter(a => a.isActive !== false);
-            if (active.length === 0) {
-                tickerPreviewTrack.innerHTML = `<span class="preview-empty">📢 No active announcements — ticker is idle</span>`;
-                return;
+                allAnnouncements = allAnnouncements.map(a => {
+                    // Preserve explicit draft/deleted/archived states; otherwise compute live status
+                    const status = (a.status === 'draft' || a.status === 'deleted' || a.status === 'archived')
+                        ? a.status : getStatus(a);
+                    return { ...a, status };
+                });
+                renderAnnouncements();
+                updateStats();
+            } catch (err) {
+                console.error(err);
+                showToast('❌ Failed to load announcements: ' + err.message, 'error');
             }
-            let html = '';
-            active.forEach(a => {
-                const catClass = a.isUrgent ? 'urgent' : getCategoryClass(a.category);
-                const label = getCategoryLabel(a.category);
-                html += `<span class="preview-item">
-                            <span class="preview-cat ${catClass}">${label}</span>
-                            ${escapeHtml(a.title)} ${a.isUrgent ? '🚨' : ''}
-                        </span>`;
-            });
-            // Duplicate for seamless loop
-            tickerPreviewTrack.innerHTML = html + html;
         }
 
-        function renderList() {
-            let filtered = announcementsCache;
-            if (currentFilter !== 'all') {
-                filtered = filtered.filter(a => a.category === currentFilter);
+        // ─── RENDER ───
+        function renderAnnouncements() {
+            const filterStatus = statusFilter.value;
+            const filterCategory = categoryFilter.value;
+            const filterPriority = priorityFilter.value;
+            const filterActive = activeFilter.value;
+            const searchQuery = searchInput.value.toLowerCase().trim();
+            const sortVal = sortSelect.value;
+
+            // Recycle bin (deleted) items never show in the main grid
+            let filtered = allAnnouncements.filter(a => a.status !== 'deleted');
+
+            if (filterStatus !== 'all') {
+                filtered = filtered.filter(a => a.status === filterStatus);
             }
+            if (filterCategory !== 'all') {
+                filtered = filtered.filter(a => a.category === filterCategory);
+            }
+            if (filterPriority !== 'all') {
+                filtered = filtered.filter(a => (a.priority || 'normal') === filterPriority);
+            }
+            if (filterActive !== 'all') {
+                const isActive = filterActive === 'true';
+                filtered = filtered.filter(a => a.active === isActive);
+            }
+            if (searchQuery) {
+                filtered = filtered.filter(a =>
+                    (a.title && a.title.toLowerCase().includes(searchQuery)) ||
+                    (a.shortHeadline && a.shortHeadline.toLowerCase().includes(searchQuery)) ||
+                    (a.message && a.message.toLowerCase().includes(searchQuery)) ||
+                    (a.category && a.category.toLowerCase().includes(searchQuery)) ||
+                    (a.emoji && a.emoji.includes(searchQuery))
+                );
+            }
+
+            // Sort
+            switch (sortVal) {
+                case 'priority':
+                    filtered.sort((a, b) => getPriorityRank(a.priority) - getPriorityRank(b.priority) ||
+                        new Date(b.startDateTime) - new Date(a.startDateTime));
+                    break;
+                case 'latest':
+                    filtered.sort((a, b) => new Date(b.startDateTime) - new Date(a.startDateTime));
+                    break;
+                case 'oldest':
+                    filtered.sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime));
+                    break;
+                case 'title':
+                    filtered.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+                    break;
+                case 'title_desc':
+                    filtered.sort((a, b) => (b.title || '').localeCompare(a.title || ''));
+                    break;
+                default:
+                    filtered.sort((a, b) => new Date(b.startDateTime) - new Date(a.startDateTime));
+            }
+
+            // Pinned first
+            filtered.sort((a, b) => {
+                if (a.pinned && !b.pinned) return -1;
+                if (!a.pinned && b.pinned) return 1;
+                return 0;
+            });
 
             if (filtered.length === 0) {
-                listContainer.innerHTML = `
-                        <div class="list-empty">
-                            <i class="fas fa-inbox"></i>
-                            ${currentFilter === 'all' ? 'No announcements yet. Create your first one above!' : 'No announcements in this category.'}
-                        </div>
-                    `;
+                announcementsGrid.innerHTML = '';
+                emptyState.style.display = 'block';
                 return;
             }
+            emptyState.style.display = 'none';
 
             let html = '';
-            filtered.forEach(a => {
-                const catClass = getCategoryClass(a.category);
-                const catLabel = getCategoryLabel(a.category);
-                const isActive = a.isActive !== false;
-                const isUrgent = a.isUrgent === true;
-                const timeStr = a.timestamp ? formatDMY(a.timestamp) : '';
-                const statusText = isActive ? '✅ Active' : '⛔ Inactive';
-                const statusClass = isActive ? '' : 'inactive';
-                const urgentTag = isUrgent ? `<span class="urgent-tag">🚨 URGENT</span>` : '';
+            filtered.forEach(ann => {
+                const status = ann.status || getStatus(ann);
+                const statusLabel = getStatusLabel(status);
+                const statusClass = getStatusClass(status);
+                const displayIcon = ann.emoji || (CATEGORY_META[ann.category] ? CATEGORY_META[ann.category].icon : '📢');
+                const catColor = ann.bannerColor || (CATEGORY_META[ann.category] ? CATEGORY_META[ann.category].color : '#00B4D8');
+                const visLabel = (ann.visibility || []).map(v => ({ 'all': '🌐 All', 'active': '✅ Active',
+                    'suspended': '⏸ Suspended', 'expired': '⛔ Expired', 'selected_package': '📦 Package',
+                    'selected_area': '📍 Area', 'selected_zone': '🗺 Zone', 'selected_customers': '🎯 Selected' } [v] || v)).join(', ');
+                const locLabel = (ann.displayLocations || ['ticker']).map(v => ({ 'ticker': '📰 Ticker', 'banner': '🖼 Banner',
+                    'popup': '💬 Popup', 'card': '🗂 Card', 'dashboard': '📊 Dashboard', 'portal_home': '🏠 Portal Home',
+                    'login_notice': '🔐 Login' } [v] || v)).join(', ');
+                const priorityLabel = getPriorityLabel(ann.priority);
+                const priorityColor = getPriorityColor(ann.priority);
+
+                // Countdown
+                let countdownHtml = '';
+                if (status === 'scheduled' || status === 'expiring') {
+                    const target = status === 'scheduled' ? new Date(ann.startDateTime) : new Date(ann.endDateTime);
+                    const now = new Date();
+                    const diff = target.getTime() - now.getTime();
+                    if (diff > 0) {
+                        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                        const label = status === 'scheduled' ? '🕐 Starts In' : '⏳ Expires In';
+                        countdownHtml = `
+                            <div class="card-countdown" data-target="${target.toISOString()}" data-type="${status}">
+                                <span class="cd-label">${label}</span>
+                                <span class="cd-digits">
+                                    <span>${String(days).padStart(2,'0')}</span><span class="cd-unit">d</span>
+                                    <span>${String(hours).padStart(2,'0')}</span><span class="cd-unit">h</span>
+                                    <span>${String(mins).padStart(2,'0')}</span><span class="cd-unit">m</span>
+                                </span>
+                            </div>
+                        `;
+                    }
+                }
+
+                // Description truncation
+                const descShort = ann.message && ann.message.length > 120 ? ann.message.slice(0, 120) + '...' : (ann
+                .message || '');
+
+                // Flags
+                let flagsHtml = `<div class="card-flags">`;
+                flagsHtml += `<span class="flag-tag ${ann.active ? 'active-true' : 'active-false'}">${ann.active ? '✅ Active' : '⛔ Inactive'}</span>`;
+                if (ann.pinned) flagsHtml += `<span class="flag-tag" style="color:#f5a623;border-color:rgba(245,166,35,0.06);">📌 Pinned</span>`;
+                flagsHtml += `</div>`;
 
                 html += `
-                        <div class="list-item" style="border-left-color: ${isUrgent ? '#e74c3c' : (isActive ? '#2ecc71' : '#7e8c8f')};">
-                            <div class="item-info">
-                                <div class="item-title">
-                                    ${escapeHtml(a.title)} ${urgentTag}
-                                </div>
-                                <div class="item-meta">
-                                    <span class="meta-cat ${catClass}">${catLabel}</span>
-                                    <span class="meta-time"><i class="far fa-clock"></i> ${timeStr}</span>
-                                </div>
-                                <div class="item-desc">${escapeHtml(a.message)}</div>
-                            </div>
-                            <div class="item-status">
-                                <span class="status-badge-item ${statusClass}">${statusText}</span>
-                                <div class="item-actions">
-                                    <button class="edit-btn" onclick="editAnnouncement('${a.id}')"><i class="fas fa-edit"></i> Edit</button>
-                                    <button class="toggle-btn" onclick="toggleAnnouncement('${a.id}')">
-                                        <i class="fas ${isActive ? 'fa-eye' : 'fa-eye-slash'}"></i>
-                                    </button>
-                                    <button class="delete-btn" onclick="deleteAnnouncement('${a.id}')"><i class="fas fa-trash"></i></button>
-                                </div>
+                    <div class="announce-card ${ann.pinned ? 'pinned' : ''}" style="border-top: 3px solid ${catColor};">
+                        <input type="checkbox" class="card-select" data-id="${ann.id}" onclick="toggleSelect('${ann.id}', this.checked)" ${selectedIds.has(ann.id) ? 'checked' : ''}>
+                        <div class="card-top">
+                            <span class="card-icon">${displayIcon}</span>
+                            <div class="card-title-group">
+                                <div class="card-title">${escapeHtml(ann.title)}</div>
+                                <span class="card-category" style="color:${catColor};">${ann.category || ''}</span>
+                                ${ann.shortHeadline ? `<div style="font-size:0.6rem;color:#7a9aae;font-weight:600;margin-top:2px;">📰 ${escapeHtml(ann.shortHeadline)}</div>` : ''}
                             </div>
                         </div>
-                    `;
+                        <div class="card-body" id="desc_${ann.id}">
+                            ${escapeHtml(descShort)}
+                            ${ann.message && ann.message.length > 120 ? `<span class="read-more" onclick="toggleDescription('${ann.id}')">Read more</span>` : ''}
+                        </div>
+                        ${ann.imageUrl ? `<img src="${escapeHtml(ann.imageUrl)}" alt="" style="width:100%;border-radius:10px;margin:6px 0;max-height:140px;object-fit:cover;">` : ''}
+                        ${ann.buttonText && ann.buttonLink ? `<a href="${escapeHtml(ann.buttonLink)}" target="_blank" style="display:inline-block;margin:4px 0;padding:4px 12px;background:${catColor};color:#fff;border-radius:8px;font-size:0.6rem;font-weight:700;text-decoration:none;">${escapeHtml(ann.buttonText)}</a>` : ''}
+                        ${flagsHtml}
+                        <div class="card-meta">
+                            <span class="meta-item"><i class="fas fa-calendar-alt"></i> ${formatDateTime(ann.startDateTime)}</span>
+                            <span class="meta-item"><i class="fas fa-hourglass-end"></i> ${formatDateTime(ann.endDateTime)}</span>
+                            <span class="meta-item"><i class="fas fa-flag" style="color:${priorityColor};"></i> ${priorityLabel}</span>
+                            <span class="meta-item"><i class="fas fa-users"></i> ${visLabel || '🌐 All'}</span>
+                            <span class="meta-item"><i class="fas fa-map-marker-alt"></i> ${locLabel}</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;">
+                            <span class="card-status ${statusClass}">${statusLabel}</span>
+                            <span style="font-size:0.5rem;color:#8aa8b8;">${ann.id.slice(0,8)}</span>
+                        </div>
+                        ${countdownHtml}
+                        <div class="card-actions">
+                            <button class="act-btn view-btn" onclick="viewAnnouncement('${ann.id}')"><i class="fas fa-eye"></i> View</button>
+                            <button class="act-btn" onclick="editAnnouncement('${ann.id}')"><i class="fas fa-edit"></i> Edit</button>
+                            <button class="act-btn duplicate-btn" onclick="duplicateAnnouncement('${ann.id}')"><i class="fas fa-copy"></i> Duplicate</button>
+                            <button class="act-btn toggle-btn ${ann.active ? '' : 'inactive'}" onclick="toggleActive('${ann.id}')"><i class="fas ${ann.active ? 'fa-toggle-on' : 'fa-toggle-off'}"></i> ${ann.active ? 'Active' : 'Inactive'}</button>
+                            <button class="act-btn pin-btn" onclick="togglePin('${ann.id}')"><i class="fas fa-thumbtack"></i> ${ann.pinned ? 'Unpin' : 'Pin'}</button>
+                            ${ann.status === 'archived' ? `<button class="act-btn" onclick="restoreAnnouncement('${ann.id}')"><i class="fas fa-undo"></i> Restore</button>` : `<button class="act-btn archive-btn" onclick="archiveAnnouncement('${ann.id}')"><i class="fas fa-archive"></i> Archive</button>`}
+                            <button class="act-btn delete-btn" onclick="deleteAnnouncement('${ann.id}')"><i class="fas fa-trash"></i> Delete</button>
+                        </div>
+                    </div>
+                `;
             });
-            listContainer.innerHTML = html;
-        }
 
-        function updateFilterCounts() {
-            const all = announcementsCache.length;
-            const maintenance = announcementsCache.filter(a => a.category === 'maintenance').length;
-            const newPackages = announcementsCache.filter(a => a.category === 'new_packages').length;
-            const offers = announcementsCache.filter(a => a.category === 'offers_discounts').length;
-            const outage = announcementsCache.filter(a => a.category === 'outage_alert').length;
-            const general = announcementsCache.filter(a => a.category === 'general_news').length;
+            announcementsGrid.innerHTML = html;
 
-            document.getElementById('filterAllCount').textContent = all;
-            document.getElementById('filterMaintenanceCount').textContent = maintenance;
-            document.getElementById('filterNewPackagesCount').textContent = newPackages;
-            document.getElementById('filterOffersCount').textContent = offers;
-            document.getElementById('filterOutageCount').textContent = outage;
-            document.getElementById('filterGeneralCount').textContent = general;
-        }
-
-        // ─── ────────────────────────────────────────────
-        // ★ FILTER
-        // ─── ────────────────────────────────────────────
-
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                currentFilter = this.dataset.filter;
-                renderList();
-            });
-        });
-
-        // ─── ────────────────────────────────────────────
-        // ★ CRUD OPERATIONS
-        // ─── ────────────────────────────────────────────
-
-        function resetForm() {
-            editingId = null;
-            annCategory.value = 'general_news';
-            annTitle.value = '';
-            annMessage.value = '';
-            annUrgent.checked = false;
-            annActive.checked = true;
-            formTitle.textContent = 'Add New Announcement';
-            submitBtn.innerHTML = '<i class="fas fa-plus"></i> Add Announcement';
-            deleteBtn.style.display = 'none';
-            formFeedback.className = 'form-feedback';
-            formFeedback.style.display = 'none';
-            isSubmitting = false;
-            submitBtn.disabled = false;
-        }
-
-        function editAnnouncement(id) {
-            const a = announcementsCache.find(item => item.id === id);
-            if (!a) return;
-            editingId = id;
-            annCategory.value = a.category || 'general_news';
-            annTitle.value = a.title || '';
-            annMessage.value = a.message || '';
-            annUrgent.checked = !!a.isUrgent;
-            annActive.checked = a.isActive !== false;
-            formTitle.textContent = '✏️ Edit Announcement';
-            submitBtn.innerHTML = '<i class="fas fa-save"></i> Update';
-            deleteBtn.style.display = 'inline-flex';
-            formFeedback.className = 'form-feedback';
-            formFeedback.style.display = 'none';
-            // Scroll to form
-            document.getElementById('formSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
-            annTitle.focus();
-        }
-
-        async function deleteAnnouncement(id) {
-            if (!confirm('🗑️ Delete this announcement permanently?')) return;
-            try {
-                await getAnnouncementsRef().child(id).remove();
-                showFeedback('🗑️ Announcement deleted successfully.', 'success');
-                if (editingId === id) resetForm();
-            } catch (e) {
-                console.error('deleteAnnouncement error:', e);
-                showFeedback('❌ Error: ' + e.message, 'error');
-            }
-        }
-
-        async function toggleAnnouncement(id) {
-            const a = announcementsCache.find(item => item.id === id);
-            if (!a) return;
-            const newStatus = a.isActive !== false ? false : true;
-            try {
-                await getAnnouncementsRef().child(id).update({
-                    isActive: newStatus,
-                    updatedAt: new Date().toISOString()
-                });
-                showFeedback(`✅ Announcement ${newStatus ? 'activated' : 'deactivated'}.`, 'success');
-            } catch (e) {
-                console.error('toggleAnnouncement error:', e);
-                showFeedback('❌ Error: ' + e.message, 'error');
-            }
-        }
-
-        async function saveAnnouncement() {
-            if (isSubmitting) return;
-
-            const title = annTitle.value.trim();
-            const message = annMessage.value.trim();
-            const category = annCategory.value;
-            const isUrgent = annUrgent.checked;
-            const isActive = annActive.checked;
-
-            if (!title || !message) {
-                showFeedback('⚠️ Please fill in both Title and Message.', 'error');
-                return;
-            }
-            if (title.length > 80) {
-                showFeedback('⚠️ Title must be 80 characters or less.', 'error');
-                return;
-            }
-            if (message.length > 500) {
-                showFeedback('⚠️ Message must be 500 characters or less.', 'error');
-                return;
-            }
-
-            isSubmitting = true;
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
-
-            const ref = getAnnouncementsRef();
-            try {
-                if (editingId) {
-                    // Update
-                    await ref.child(editingId).update({
-                        title,
-                        message,
-                        category,
-                        isUrgent,
-                        isActive,
-                        updatedAt: new Date().toISOString()
-                    });
-                    showFeedback('✅ Announcement updated successfully!', 'success');
-                    resetForm();
-                } else {
-                    // Add
-                    const newRef = ref.push();
-                    await newRef.set({
-                        id: newRef.key,
-                        title,
-                        message,
-                        category,
-                        isUrgent,
-                        isActive: isActive !== false,
-                        timestamp: new Date().toISOString(),
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString()
-                    });
-                    showFeedback('✅ Announcement added successfully!', 'success');
-                    resetForm();
-                }
-            } catch (e) {
-                console.error('saveAnnouncement error:', e);
-                showFeedback('❌ Error: ' + e.message, 'error');
-            } finally {
-                isSubmitting = false;
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = editingId ? '<i class="fas fa-save"></i> Update' :
-                    '<i class="fas fa-plus"></i> Add Announcement';
-            }
-        }
-
-        // ─── ────────────────────────────────────────────
-        // ★ UI HELPERS
-        // ─── ────────────────────────────────────────────
-
-        function showFeedback(msg, type) {
-            formFeedback.textContent = msg;
-            formFeedback.className = 'form-feedback ' + type;
-            formFeedback.style.display = 'block';
-            // Auto-hide after 4 seconds for success/info
-            if (type === 'success' || type === 'info') {
-                setTimeout(() => {
-                    if (formFeedback.classList.contains(type)) {
-                        formFeedback.style.display = 'none';
+            // Countdown timers
+            document.querySelectorAll('.card-countdown').forEach(el => {
+                const target = new Date(el.dataset.target);
+                const interval = setInterval(() => {
+                    const now = new Date();
+                    const diff = target.getTime() - now.getTime();
+                    if (diff <= 0) {
+                        clearInterval(interval);
+                        loadAnnouncements();
+                        return;
                     }
-                }, 4000);
-            }
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const digits = el.querySelector('.cd-digits');
+                    if (digits) {
+                        const parts = digits.querySelectorAll('span');
+                        if (parts.length >= 5) {
+                            parts[0].textContent = String(days).padStart(2, '0');
+                            parts[2].textContent = String(hours).padStart(2, '0');
+                            parts[4].textContent = String(mins).padStart(2, '0');
+                        }
+                    }
+                }, 10000);
+                if (!window._countdownIntervals) window._countdownIntervals = [];
+                window._countdownIntervals.push(interval);
+            });
         }
 
-        function updateConnectionStatus(connected) {
-            if (connected) {
-                connectionStatus.innerHTML = '<i class="fas fa-circle" style="color:#2ecc71;"></i> Connected';
-                connectionStatus.className = 'status-badge';
+        // ─── TOGGLE DESCRIPTION ───
+        window.toggleDescription = function(id) {
+            const el = document.getElementById(`desc_${id}`);
+            if (!el) return;
+            const ann = allAnnouncements.find(a => a.id === id);
+            if (!ann) return;
+            const isShort = el.textContent.includes('Read more');
+            if (isShort) {
+                el.textContent = escapeHtml(ann.message);
+                el.innerHTML +=
+                ` <span class="read-more" onclick="toggleDescription('${id}')">Show less</span>`;
             } else {
-                connectionStatus.innerHTML = '<i class="fas fa-circle" style="color:#e74c3c;"></i> Offline — reconnecting…';
-                connectionStatus.className = 'status-badge offline';
+                const short = ann.message && ann.message.length > 120 ? ann.message.slice(0, 120) + '...' : (ann.message ||
+                    '');
+                el.textContent = escapeHtml(short);
+                if (ann.message && ann.message.length > 120) {
+                    el.innerHTML +=
+                    ` <span class="read-more" onclick="toggleDescription('${id}')">Read more</span>`;
+                }
+            }
+        };
+
+        // ─── VIEW ───
+        window.viewAnnouncement = function(id) {
+            const ann = allAnnouncements.find(a => a.id === id);
+            if (!ann) return;
+            previewIcon.textContent = ann.emoji || '📢';
+            previewTitle.textContent = ann.title;
+            previewCategory.textContent = ann.category;
+            previewBody.textContent = ann.message;
+            previewStart.textContent = `Start: ${formatDateTime(ann.startDateTime)}`;
+            previewEnd.textContent = `End: ${formatDateTime(ann.endDateTime)}`;
+            previewPriority.textContent = getPriorityLabel(ann.priority);
+            previewPriority.style.color = getPriorityColor(ann.priority);
+            const vis = ann.visibility || ['all'];
+            previewVisibility.textContent = vis.map(v => ({ 'all': '🌐 All Clients', 'active': '✅ Active Only',
+                'inactive': '⛔ Inactive Only', 'discounted': '💎 Discounted Only', 'selected_package': '📦 Selected Package',
+                'selected_area': '📍 Selected Area' } [v] || v)).join(', ') || '🌐 All Clients';
+            previewActive.textContent = ann.active ? '✅ Active' : '⛔ Inactive';
+            previewActive.style.color = ann.active ? '#00a86b' : '#e74c3c';
+            previewModal.classList.add('active');
+        };
+
+        // ─── EDIT ───
+        window.editAnnouncement = function(id) {
+            const ann = allAnnouncements.find(a => a.id === id);
+            if (!ann) { showToast('Announcement not found.', 'error'); return; }
+            openModal(ann);
+        };
+
+        // ─── DUPLICATE ───
+        window.duplicateAnnouncement = async function(id) {
+            const ann = allAnnouncements.find(a => a.id === id);
+            if (!ann) { showToast('Announcement not found.', 'error'); return; }
+            try {
+                const now = new Date().toISOString();
+                const newId = generateId();
+                const newAnn = {
+                    ...ann,
+                    id: newId,
+                    createdAt: now,
+                    updatedAt: now,
+                    title: ann.title + ' (Copy)',
+                    pinned: false,
+                    status: 'scheduled'
+                };
+                delete newAnn.status;
+                await db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements/${newId}`).set(newAnn);
+                showToast('📋 Announcement duplicated successfully!', 'success');
+                await loadAnnouncements();
+            } catch (err) {
+                showToast('❌ Failed to duplicate: ' + err.message, 'error');
+            }
+        };
+
+        // ─── TOGGLE ACTIVE ───
+        window.toggleActive = async function(id) {
+            const ann = allAnnouncements.find(a => a.id === id);
+            if (!ann) return;
+            const newVal = !ann.active;
+            try {
+                await db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements/${id}/active`).set(newVal);
+                await db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements/${id}/updatedAt`).set(new Date()
+                .toISOString());
+                showToast(newVal ? '✅ Announcement activated.' : '⛔ Announcement deactivated.', 'success');
+                await loadAnnouncements();
+            } catch (err) {
+                showToast('❌ Failed to toggle active: ' + err.message, 'error');
+            }
+        };
+
+        // ─── TOGGLE PIN ───
+        window.togglePin = async function(id) {
+            try {
+                const ann = allAnnouncements.find(a => a.id === id);
+                if (!ann) return;
+                const newPin = !ann.pinned;
+                await db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements/${id}/pinned`).set(newPin);
+                await db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements/${id}/updatedAt`).set(new Date()
+                .toISOString());
+                showToast(newPin ? '📌 Announcement pinned!' : '📌 Announcement unpinned.', 'success');
+                await loadAnnouncements();
+            } catch (err) {
+                showToast('❌ Failed to toggle pin: ' + err.message, 'error');
+            }
+        };
+
+        // ─── ARCHIVE ───
+        window.archiveAnnouncement = async function(id) {
+            if (!confirm('Archive this announcement? It will be hidden from clients.')) return;
+            try {
+                const ann = allAnnouncements.find(a => a.id === id);
+                await db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements/${id}/status`).set('archived');
+                await db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements/${id}/archivedAt`).set(new Date()
+                .toISOString());
+                logActivity('archive', ann ? ann.title : id);
+                showToast('📦 Announcement archived.', 'success');
+                await loadAnnouncements();
+            } catch (err) {
+                showToast('❌ Failed to archive: ' + err.message, 'error');
+            }
+        };
+
+        // ─── RESTORE (from archive or recycle bin) ───
+        window.restoreAnnouncement = async function(id) {
+            try {
+                const ann = allAnnouncements.find(a => a.id === id);
+                const newStatus = ann ? getStatus({ startDateTime: ann.startDateTime, endDateTime: ann.endDateTime, status: 'scheduled' }) : 'scheduled';
+                await db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements/${id}/status`).set(newStatus);
+                await db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements/${id}/deletedAt`).remove();
+                await db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements/${id}/archivedAt`).remove();
+                logActivity('restore', ann ? ann.title : id);
+                showToast('♻️ Announcement restored.', 'success');
+                await loadAnnouncements();
+                await renderRecycleBin();
+            } catch (err) {
+                showToast('❌ Failed to restore: ' + err.message, 'error');
+            }
+        };
+
+        // ─── SOFT DELETE (moves to Recycle Bin) ───
+        window.deleteAnnouncement = async function(id) {
+            if (!confirm('Move this announcement to the Recycle Bin?')) return;
+            try {
+                const ann = allAnnouncements.find(a => a.id === id);
+                await db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements/${id}/status`).set('deleted');
+                await db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements/${id}/deletedAt`).set(new Date().toISOString());
+                logActivity('soft_delete', ann ? ann.title : id);
+                showToast('🗑 Moved to Recycle Bin.', 'success');
+                await loadAnnouncements();
+            } catch (err) {
+                showToast('❌ Failed to delete: ' + err.message, 'error');
+            }
+        };
+
+        // ─── PERMANENT DELETE (from Recycle Bin only) ───
+        window.permanentDeleteAnnouncement = async function(id) {
+            if (!confirm('⚠️ Permanently delete this announcement? This cannot be undone.')) return;
+            try {
+                await db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements/${id}`).remove();
+                logActivity('permanent_delete', id);
+                showToast('🗑 Announcement permanently deleted.', 'success');
+                await loadAnnouncements();
+                await renderRecycleBin();
+            } catch (err) {
+                showToast('❌ Failed to delete: ' + err.message, 'error');
+            }
+        };
+
+        // ─── BULK SELECTION ───
+        window.toggleSelect = function(id, checked) {
+            if (checked) selectedIds.add(id); else selectedIds.delete(id);
+            updateBulkToolbar();
+        };
+        function updateBulkToolbar() {
+            const bar = document.getElementById('bulkToolbar');
+            const count = document.getElementById('bulkCount');
+            if (selectedIds.size > 0) {
+                bar.classList.add('active');
+                count.textContent = `${selectedIds.size} selected`;
+            } else {
+                bar.classList.remove('active');
+            }
+        }
+        document.getElementById('bulkClearBtn').addEventListener('click', () => {
+            selectedIds.clear();
+            updateBulkToolbar();
+            renderAnnouncements();
+        });
+        document.getElementById('bulkPublishBtn').addEventListener('click', async () => {
+            if (selectedIds.size === 0) return;
+            for (const id of selectedIds) {
+                const ann = allAnnouncements.find(a => a.id === id);
+                if (!ann) continue;
+                const newStatus = getStatus({ startDateTime: ann.startDateTime, endDateTime: ann.endDateTime, status: 'scheduled' });
+                await db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements/${id}/status`).set(newStatus);
+                await db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements/${id}/active`).set(true);
+            }
+            logActivity('bulk_publish', `${selectedIds.size} announcements`);
+            showToast(`✅ ${selectedIds.size} announcement(s) published.`, 'success');
+            selectedIds.clear();
+            await loadAnnouncements();
+        });
+        document.getElementById('bulkExpireBtn').addEventListener('click', async () => {
+            if (selectedIds.size === 0) return;
+            const pastDate = new Date(Date.now() - 60000).toISOString();
+            for (const id of selectedIds) {
+                await db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements/${id}/endDateTime`).set(pastDate);
+                await db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements/${id}/status`).set('expired');
+            }
+            logActivity('bulk_expire', `${selectedIds.size} announcements`);
+            showToast(`⏳ ${selectedIds.size} announcement(s) expired.`, 'success');
+            selectedIds.clear();
+            await loadAnnouncements();
+        });
+        document.getElementById('bulkDeleteBtn').addEventListener('click', async () => {
+            if (selectedIds.size === 0) return;
+            if (!confirm(`Move ${selectedIds.size} announcement(s) to the Recycle Bin?`)) return;
+            for (const id of selectedIds) {
+                await db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements/${id}/status`).set('deleted');
+                await db.ref(`${ANNOUNCEMENTS_PATH}/${ADMIN_UID}/announcements/${id}/deletedAt`).set(new Date().toISOString());
+            }
+            logActivity('bulk_delete', `${selectedIds.size} announcements`);
+            showToast(`🗑 ${selectedIds.size} announcement(s) moved to Recycle Bin.`, 'success');
+            selectedIds.clear();
+            await loadAnnouncements();
+        });
+
+        // ─── UPDATE STATS ───
+        function updateStats() {
+            const visible = allAnnouncements.filter(a => a.status !== 'deleted');
+            const total = visible.length;
+            const live = visible.filter(a => a.status === 'live' && a.active !== false).length;
+            const scheduled = visible.filter(a => a.status === 'scheduled' && a.active !== false).length;
+            const drafts = visible.filter(a => a.status === 'draft').length;
+            const expired = visible.filter(a => a.status === 'expired').length;
+            const active = visible.filter(a => a.active !== false && a.status !== 'archived' && a.status !== 'draft').length;
+            const now = Date.now();
+            const tickerActive = visible.filter(a => a.active && (a.displayLocations || ['ticker']).includes('ticker') &&
+                new Date(a.startDateTime).getTime() <= now && new Date(a.endDateTime).getTime() >= now).length;
+
+            statTotal.textContent = total;
+            statLive.textContent = live;
+            statScheduled.textContent = scheduled;
+            statDrafts.textContent = drafts;
+            statExpired.textContent = expired;
+            statActive.textContent = active;
+            statTickerActive.textContent = tickerActive;
+
+            const published = visible.filter(a => a.startDateTime).sort((a, b) =>
+                new Date(b.startDateTime) - new Date(a.startDateTime)
+            );
+            if (published.length > 0) {
+                statLastPublished.textContent = formatDate(published[0].startDateTime);
+            } else {
+                statLastPublished.textContent = '—';
             }
         }
 
-        // ─── ────────────────────────────────────────────
-        // ★ EVENT BINDINGS
-        // ─── ────────────────────────────────────────────
+        // ─── ESCAPE HTML ───
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, m => { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m ===
+                    '>') return '&gt;'; return m; });
+        }
 
-        submitBtn.addEventListener('click', saveAnnouncement);
-        cancelBtn.addEventListener('click', resetForm);
-        deleteBtn.addEventListener('click', () => {
-            if (editingId) deleteAnnouncement(editingId);
+        // ─── FILTERS ───
+        statusFilter.addEventListener('change', renderAnnouncements);
+        categoryFilter.addEventListener('change', renderAnnouncements);
+        priorityFilter.addEventListener('change', renderAnnouncements);
+        activeFilter.addEventListener('change', renderAnnouncements);
+        searchInput.addEventListener('input', renderAnnouncements);
+        sortSelect.addEventListener('change', renderAnnouncements);
+
+        // ─── REFRESH ───
+        refreshBtn.addEventListener('click', () => {
+            loadAnnouncements();
+            showToast('🔄 Refreshed!', 'info');
         });
 
-        // Enter key on title field
-        annTitle.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                annMessage.focus();
+        // ─── RECYCLE BIN ───
+        async function renderRecycleBin() {
+            const list = document.getElementById('recycleBinList');
+            const deleted = allAnnouncements.filter(a => a.status === 'deleted');
+            if (deleted.length === 0) {
+                list.innerHTML = '<p style="font-size:0.7rem;color:#7a9aae;">Recycle Bin is empty.</p>';
+                return;
+            }
+            list.innerHTML = deleted.map(a => `
+                <div style="padding:10px 0;border-bottom:1px solid #eef4f8;">
+                    <b style="font-size:0.75rem;">${a.emoji || '📢'} ${escapeHtml(a.title)}</b>
+                    <div style="font-size:0.6rem;color:#7a9aae;">Deleted: ${formatDateTime(a.deletedAt)}</div>
+                    <div class="recycle-item-actions">
+                        <button class="act-btn" onclick="restoreAnnouncement('${a.id}')"><i class="fas fa-undo"></i> Restore</button>
+                        <button class="act-btn delete-btn" onclick="permanentDeleteAnnouncement('${a.id}')"><i class="fas fa-trash"></i> Delete Forever</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        document.getElementById('recycleBinBtn').addEventListener('click', () => {
+            document.getElementById('recycleBinModal').classList.add('active');
+            renderRecycleBin();
+        });
+        document.getElementById('recycleBinCloseBtn').addEventListener('click', () => {
+            document.getElementById('recycleBinModal').classList.remove('active');
+        });
+
+        // ─── ACTIVITY LOG ───
+        async function renderActivityLogPanel() {
+            const list = document.getElementById('activityLogList');
+            try {
+                const snap = await db.ref(ACTIVITY_LOG_PATH).limitToLast(50).once('value');
+                const data = snap.val();
+                if (!data) { list.innerHTML = '<p style="font-size:0.7rem;color:#7a9aae;">No activity yet.</p>'; return; }
+                const entries = Object.values(data).sort((a, b) => new Date(b.at) - new Date(a.at));
+                list.innerHTML = entries.map(e => `
+                    <div class="log-entry"><b>${e.by}</b> — ${e.action.replace(/_/g,' ')} — ${escapeHtml(e.target || '')}
+                        <div style="color:#8aa8b8;">${formatDateTime(e.at)}</div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                list.innerHTML = '<p style="font-size:0.7rem;color:#e74c3c;">Failed to load activity log.</p>';
+            }
+        }
+        document.getElementById('activityLogBtn').addEventListener('click', () => {
+            document.getElementById('activityLogModal').classList.add('active');
+            renderActivityLogPanel();
+        });
+        document.getElementById('activityLogCloseBtn').addEventListener('click', () => {
+            document.getElementById('activityLogModal').classList.remove('active');
+        });
+
+        // ─── BREAKING NEWS TICKER SETTINGS ───
+        const tsBgColor = document.getElementById('tsBgColor');
+        const tsLabelBg = document.getElementById('tsLabelBg');
+        const tsTextColor = document.getElementById('tsTextColor');
+        const tsFontSize = document.getElementById('tsFontSize');
+        const tsSpeed = document.getElementById('tsSpeed');
+        const tsRadius = document.getElementById('tsRadius');
+        const tsAnimation = document.getElementById('tsAnimation');
+        const tsLabelOn = document.getElementById('tsLabelOn');
+        const tsPreviewBar = document.getElementById('tsPreviewBar');
+        const tsPreviewLabel = document.getElementById('tsPreviewLabel');
+        const tsPreviewWrap = document.getElementById('tsPreviewWrap');
+
+        function updateTickerPreview() {
+            tsPreviewWrap.style.background = tsBgColor.value;
+            tsPreviewWrap.style.borderRadius = tsRadius.value + 'px';
+            tsPreviewBar.style.color = tsTextColor.value;
+            tsPreviewBar.style.fontSize = tsFontSize.value + 'px';
+            tsPreviewLabel.style.background = tsLabelBg.value;
+            tsPreviewLabel.style.color = '#fff';
+            tsPreviewLabel.style.display = tsLabelOn.value === 'on' ? 'inline-block' : 'none';
+        }
+        [tsBgColor, tsLabelBg, tsTextColor, tsFontSize, tsSpeed, tsRadius, tsAnimation, tsLabelOn].forEach(el => {
+            el.addEventListener('input', updateTickerPreview);
+            el.addEventListener('change', updateTickerPreview);
+        });
+
+        async function loadTickerSettings() {
+            try {
+                const snap = await db.ref(TICKER_SETTINGS_PATH).once('value');
+                const s = snap.val();
+                if (s) {
+                    tsBgColor.value = s.bgColor || '#0a1a2a';
+                    tsLabelBg.value = s.labelBg || '#e63946';
+                    tsTextColor.value = s.textColor || '#ffffff';
+                    tsFontSize.value = s.fontSize || 13;
+                    tsSpeed.value = s.speed || 25;
+                    tsRadius.value = s.radius || 0;
+                    tsAnimation.value = s.animation || 'on';
+                    tsLabelOn.value = s.labelOn || 'on';
+                }
+                updateTickerPreview();
+            } catch (_) { updateTickerPreview(); }
+        }
+
+        document.getElementById('tickerSettingsBtn').addEventListener('click', () => {
+            document.getElementById('tickerSettingsModal').classList.add('active');
+            loadTickerSettings();
+        });
+        document.getElementById('tickerSettingsCloseBtn').addEventListener('click', () => {
+            document.getElementById('tickerSettingsModal').classList.remove('active');
+        });
+        document.getElementById('tsCancelBtn').addEventListener('click', () => {
+            document.getElementById('tickerSettingsModal').classList.remove('active');
+        });
+        document.getElementById('tsSaveBtn').addEventListener('click', async () => {
+            try {
+                const settings = {
+                    bgColor: tsBgColor.value,
+                    labelBg: tsLabelBg.value,
+                    textColor: tsTextColor.value,
+                    fontSize: Number(tsFontSize.value),
+                    speed: Number(tsSpeed.value),
+                    radius: Number(tsRadius.value),
+                    animation: tsAnimation.value,
+                    labelOn: tsLabelOn.value,
+                    updatedAt: new Date().toISOString()
+                };
+                await db.ref(TICKER_SETTINGS_PATH).set(settings);
+                logActivity('update_ticker_settings', '');
+                showToast('✅ Ticker settings saved & applied live!', 'success');
+            } catch (err) {
+                showToast('❌ Failed to save ticker settings: ' + err.message, 'error');
             }
         });
 
-        // ─── ────────────────────────────────────────────
-        // ★ INIT
-        // ─── ────────────────────────────────────────────
+        // ─── AUTH ───
+        loginBtn.addEventListener('click', async () => {
+            const email = adminEmail.value.trim();
+            const password = adminPassword.value.trim();
+            if (!email || !password) {
+                loginError.textContent = 'Please enter email and password.';
+                return;
+            }
+            loginError.textContent = '';
+            loginLoader.style.display = 'block';
+            loginBtn.disabled = true;
 
-        // Start listening
-        listenAnnouncements();
+            try {
+                const cred = await auth.signInWithEmailAndPassword(email, password);
+                const user = cred.user;
+                if (user.uid !== ADMIN_UID) {
+                    await auth.signOut();
+                    loginError.textContent = '❌ Unauthorized access. Admin only.';
+                    loginLoader.style.display = 'none';
+                    loginBtn.disabled = false;
+                    return;
+                }
+                loginScreen.style.display = 'none';
+                adminPanel.style.display = 'block';
+                await loadAnnouncements();
+                setInterval(loadAnnouncements, 60000);
+                showToast('👋 Welcome back, Admin!', 'success');
+            } catch (err) {
+                loginError.textContent = '❌ ' + err.message;
+            } finally {
+                loginLoader.style.display = 'none';
+                loginBtn.disabled = false;
+            }
+        });
 
-        // Set initial filter
-        currentFilter = 'all';
-        document.querySelector('.filter-btn[data-filter="all"]')?.classList.add('active');
+        adminPassword.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') loginBtn.click();
+        });
+        adminEmail.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') loginBtn.click();
+        });
 
-        console.log('📢 D3 Crown Fiber — Announcement Admin Panel');
+        // ─── LOGOUT ───
+        logoutBtn.addEventListener('click', async () => {
+            if (!confirm('Logout from admin panel?')) return;
+            try {
+                await auth.signOut();
+                adminPanel.style.display = 'none';
+                loginScreen.style.display = 'flex';
+                loginError.textContent = '';
+                adminEmail.value = '';
+                adminPassword.value = '';
+                if (window._countdownIntervals) {
+                    window._countdownIntervals.forEach(i => clearInterval(i));
+                    window._countdownIntervals = [];
+                }
+                showToast('👋 Logged out successfully.', 'info');
+            } catch (err) {
+                showToast('❌ Logout failed: ' + err.message, 'error');
+            }
+        });
+
+        // ─── AUTO AUTH CHECK ───
+        auth.onAuthStateChanged(async (user) => {
+            if (user && user.uid === ADMIN_UID) {
+                loginScreen.style.display = 'none';
+                adminPanel.style.display = 'block';
+                await loadAnnouncements();
+                setInterval(loadAnnouncements, 60000);
+                showToast('👋 Welcome back, Admin!', 'success');
+            } else if (user && user.uid !== ADMIN_UID) {
+                await auth.signOut();
+                loginScreen.style.display = 'flex';
+                adminPanel.style.display = 'none';
+                loginError.textContent = '❌ This account is not authorized as admin.';
+            } else {
+                loginScreen.style.display = 'flex';
+                adminPanel.style.display = 'none';
+            }
+        });
+
+        // ─── KEYBOARD SHORTCUT ───
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (modal.classList.contains('active')) closeModal();
+                if (previewModal.classList.contains('active')) previewModal.classList.remove('active');
+            }
+        });
+
+        // ─── SET DEFAULT DATES ───
+        (function setDefaultDates() {
+            const now = new Date();
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const nextWeek = new Date(now);
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            formStartDate.value = tomorrow.toISOString().slice(0, 10);
+            formStartTime.value = '08:00';
+            formEndDate.value = nextWeek.toISOString().slice(0, 10);
+            formEndTime.value = '22:00';
+            updatePreview();
+        })();
+
+        console.log('👑 D3 Crown Fiber — Announcement Management System v2');
+        console.log('✅ Admin panel loaded. Firebase connected.');
         console.log('🚀 Developed by Khalid Ali Pechuho');
-        console.log('✨ Manage announcements, categories, and push notifications.');
     </script>
-
 </body>
 </html>
